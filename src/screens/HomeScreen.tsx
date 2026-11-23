@@ -27,7 +27,7 @@ export function HomeScreen() {
         <Text style={styles.subtitle}>Resumen al estilo NEKO (datos en tu teléfono)</Text>
 
         <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Disponible aproximado</Text>
+          <Text style={styles.balanceLabel}>Disponible para gastar</Text>
           {loading ? (
             <ActivityIndicator color={colors.accent} style={{ marginTop: 12 }} />
           ) : (

@@ -1,5 +1,7 @@
 # Base inspirada en NEKO (sin copiar su código)
 
+> Análisis del APK `Neko-8.8.2.apk` (stack Flutter, Firebase, widgets): ver [NEKO-APK-ANALYSIS.md](./NEKO-APK-ANALYSIS.md).
+
 NEKO ([nekomoney.app](https://www.nekomoney.app/es)) es una app **cerrada** (iOS/Android). **No tenemos acceso a su código fuente**, solo a:
 
 - Tu **export CSV** (columnas y tipos de movimiento)

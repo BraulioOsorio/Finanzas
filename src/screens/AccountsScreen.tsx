@@ -22,7 +22,7 @@ export function AccountsScreen() {
           <Text style={styles.summaryValue}>{formatCurrency(totalInAccounts)}</Text>
         </View>
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryLabel}>Disponible (aprox.)</Text>
+          <Text style={styles.summaryLabel}>Disponible para gastar</Text>
           <Text style={styles.summaryValueSmall}>{formatCurrency(liquidAvailable)}</Text>
           <Text style={styles.hint}>Bancos y efectivo, sin deudas</Text>
         </View>

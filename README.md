@@ -27,7 +27,7 @@ npm run web       # vista web (desarrollo)
 
 ## Inspiración NEKO
 
-El modelo de datos y pantallas siguen la lógica de **[NEKO: Control de Gastos](https://www.nekomoney.app/es)** (cuentas, tipos de movimiento, categorías, import CSV). No usamos su código — solo tu export y la documentación pública. Detalle en [`docs/NEKO-BASE.md`](docs/NEKO-BASE.md).
+El modelo de datos y pantallas siguen la lógica de **[NEKO: Control de Gastos](https://www.nekomoney.app/es)** (cuentas, tipos de movimiento, categorías, import CSV). No usamos su código — solo tu export y la documentación pública. Detalle en [`docs/NEKO-BASE.md`](docs/NEKO-BASE.md). Si subes el APK de NEKO solo como referencia, léete [`docs/NEKO-APK-ANALYSIS.md`](docs/NEKO-APK-ANALYSIS.md) (no lo mezclamos con el código de la app).
 
 ## Funciones actuales
 
