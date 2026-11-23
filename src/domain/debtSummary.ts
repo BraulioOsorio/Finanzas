@@ -1,4 +1,5 @@
 import { accountDefByName } from './accounts/resolveAccounts';
+import { isLoanPayment, loanProgressForAccount, type LoanProgress } from './debts/loanLedger';
 import type { AccountBalance } from './summaries';
 import type { AccountDef, Transaction } from '../types';
 
@@ -9,9 +10,8 @@ export type DebtBucketSummary = {
   kind?: AccountDef['kind'];
   /** Pagos de préstamo este mes (magnitud positiva) */
   paidThisMonth: number;
+  progress: LoanProgress;
 };
-
-const LOAN_TYPES = new Set(['Pago de Préstamo', 'Pago de préstamo']);
 
 function isDebtAccount(name: string, def?: AccountDef): boolean {
   if (def?.kind === 'loan') {
@@ -32,10 +32,7 @@ export function debtBucketSummaries(
     if (!t.postedDate.startsWith(monthKey)) {
       continue;
     }
-    if (!LOAN_TYPES.has(t.nekoType.trim())) {
-      continue;
-    }
-    if (t.kind === 'income') {
+    if (!isLoanPayment(t)) {
       continue;
     }
     const acc = t.account.trim();
@@ -55,6 +52,7 @@ export function debtBucketSummaries(
       owed,
       kind: def?.kind,
       paidThisMonth: paidByAccount.get(bal.account.trim()) ?? 0,
+      progress: loanProgressForAccount(bal.account, accounts, bal.balance),
     });
   }
   return out.sort((a, b) => b.owed - a.owed);

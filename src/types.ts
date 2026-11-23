@@ -35,6 +35,10 @@ export type AccountDef = {
   minimumPaymentPercent?: number;
   /** Meses hasta la 1.ª cuota en extracto (RappiCard 1; algunos 0) */
   installmentStatementLagMonths?: number;
+  /** Monto original del préstamo / deuda (para barra de amortización) */
+  loanPrincipal?: number;
+  /** Día del mes recordatorio de abono (1–28) */
+  loanPaymentDay?: number;
 };
 
 /** Presupuesto mensual por grupo o categoría Neko */

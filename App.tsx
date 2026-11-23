@@ -11,6 +11,7 @@ import { CalendarScreen } from './src/screens/CalendarScreen';
 import { AddScreen } from './src/screens/AddScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
+import { DeudasScreen } from './src/screens/DeudasScreen';
 import { InformeScreen } from './src/screens/InformeScreen';
 import { ImportScreen } from './src/screens/ImportScreen';
 import { PlanScreen } from './src/screens/PlanScreen';
@@ -75,6 +76,13 @@ export default function App() {
               component={InformeScreen}
               options={{
                 tabBarLabel: ({ focused }) => <TabLabel label="Informe" focused={focused} />,
+              }}
+            />
+            <Tab.Screen
+              name="Deudas"
+              component={DeudasScreen}
+              options={{
+                tabBarLabel: ({ focused }) => <TabLabel label="Deudas" focused={focused} />,
               }}
             />
             <Tab.Screen

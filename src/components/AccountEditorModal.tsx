@@ -47,6 +47,8 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
   const [installmentInterestEA, setInstallmentInterestEA] = useState('');
   const [minimumPaymentPercent, setMinimumPaymentPercent] = useState('');
   const [installmentLag, setInstallmentLag] = useState('');
+  const [loanPrincipal, setLoanPrincipal] = useState('');
+  const [loanPaymentDay, setLoanPaymentDay] = useState('');
   const [archived, setArchived] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -86,6 +88,8 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
           : '',
       );
       setArchived(editing.archived);
+      setLoanPrincipal(editing.loanPrincipal ? String(editing.loanPrincipal) : '');
+      setLoanPaymentDay(editing.loanPaymentDay ? String(editing.loanPaymentDay) : '');
     } else {
       const seed = initialName?.trim() ?? '';
       setName(seed);
@@ -102,6 +106,8 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       setMinimumPaymentPercent('');
       setInstallmentLag('');
       setArchived(false);
+      setLoanPrincipal('');
+      setLoanPaymentDay('');
     }
   }, [visible, editing, initialName]);
 
@@ -197,6 +203,14 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       minimumPaymentPercent: kind === 'credit' ? parsePct(minimumPaymentPercent) : undefined,
       installmentStatementLagMonths:
         kind === 'credit' ? parseDay(installmentLag) : undefined,
+      loanPrincipal:
+        kind === 'loan' || name.trim().toLowerCase().includes('deuda')
+          ? Number(loanPrincipal.replace(/[^\d]/g, '')) || undefined
+          : undefined,
+      loanPaymentDay:
+        kind === 'loan' || name.trim().toLowerCase().includes('deuda')
+          ? parseDay(loanPaymentDay)
+          : undefined,
     };
 
     setSaving(true);
@@ -370,6 +384,29 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
                 value={installmentLag}
                 onChangeText={setInstallmentLag}
                 placeholder="1 (RappiCard) · 0 (Addi)"
+                placeholderTextColor={colors.textMuted}
+              />
+            </>
+          ) : null}
+
+          {kind === 'loan' || /deuda/i.test(name) ? (
+            <>
+              <Text style={styles.label}>Capital del préstamo (COP)</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="number-pad"
+                value={loanPrincipal}
+                onChangeText={setLoanPrincipal}
+                placeholder="Monto que debías al inicio"
+                placeholderTextColor={colors.textMuted}
+              />
+              <Text style={styles.label}>Día recordatorio de abono (1-28)</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="number-pad"
+                value={loanPaymentDay}
+                onChangeText={setLoanPaymentDay}
+                placeholder="14"
                 placeholderTextColor={colors.textMuted}
               />
             </>
