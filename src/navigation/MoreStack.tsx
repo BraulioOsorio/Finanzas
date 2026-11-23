@@ -1,0 +1,49 @@
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+import type { MoreStackParamList } from './moreTypes';
+import { AccountsScreen } from '../screens/AccountsScreen';
+import { CategoriesScreen } from '../screens/CategoriesScreen';
+import { DeudasScreen } from '../screens/DeudasScreen';
+import { HistoryScreen } from '../screens/HistoryScreen';
+import { ImportScreen } from '../screens/ImportScreen';
+import { InformeScreen } from '../screens/InformeScreen';
+import { MoreHubScreen } from '../screens/MoreHubScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
+import { colors } from '../theme';
+
+const Stack = createNativeStackNavigator<MoreStackParamList>();
+
+const TITLES: Partial<Record<keyof MoreStackParamList, string>> = {
+  Informe: 'Informe',
+  Historial: 'Historial',
+  Cuentas: 'Cuentas',
+  Deudas: 'Deudas',
+  Categorias: 'Categorías',
+  Importar: 'Datos',
+  Ajustes: 'Ajustes',
+};
+
+export function MoreStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: route.name !== 'MasHub',
+        title: TITLES[route.name as keyof MoreStackParamList] ?? '',
+        headerBackTitle: 'Más',
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.accent,
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: colors.background },
+      })}
+    >
+      <Stack.Screen name="MasHub" component={MoreHubScreen} />
+      <Stack.Screen name="Informe" component={InformeScreen} />
+      <Stack.Screen name="Historial" component={HistoryScreen} />
+      <Stack.Screen name="Cuentas" component={AccountsScreen} />
+      <Stack.Screen name="Deudas" component={DeudasScreen} />
+      <Stack.Screen name="Categorias" component={CategoriesScreen} />
+      <Stack.Screen name="Importar" component={ImportScreen} />
+      <Stack.Screen name="Ajustes" component={SettingsScreen} />
+    </Stack.Navigator>
+  );
+}

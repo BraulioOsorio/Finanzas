@@ -10,7 +10,12 @@ App móvil personal para registrar **ingresos y gastos**, ver **saldo** y consul
 
 ## Rama principal
 
-Todo el desarrollo NEKO/Finanzas vive en **`main`** (merge de features de cortes, deudas, disponible v2, informes, etc.).
+Todo el desarrollo NEKO/Finanzas vive en **`main`**.
+
+### Navegación (estilo NEKO)
+
+Barra inferior: **Inicio · Calendario · Plan · Registrar · Más**  
+En **Más**: Informe, Historial, Cuentas, Deudas, Categorías, Importar, Ajustes.
 
 ## Cómo ejecutarla
 

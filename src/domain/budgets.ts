@@ -92,6 +92,73 @@ function plannedForBudget(
   return sum;
 }
 
+function spentForBudgetBetween(
+  transactions: Transaction[],
+  budget: CategoryBudget,
+  start: string,
+  end: string,
+): number {
+  let sum = 0;
+  for (const t of transactions) {
+    if (t.kind !== 'expense' || t.postedDate < start || t.postedDate > end) {
+      continue;
+    }
+    const group = t.categoryGroup.trim();
+    if (group !== budget.categoryGroup.trim()) {
+      continue;
+    }
+    if (budget.category.trim() && t.category.trim() !== budget.category.trim()) {
+      continue;
+    }
+    sum += t.amount;
+  }
+  return sum;
+}
+
+/** Presupuesto multi-mes: límite = monthlyLimit × nº de meses en el rango. */
+export function budgetProgressForDateRange(
+  budgets: CategoryBudget[],
+  transactions: Transaction[],
+  start: string,
+  end: string,
+  monthKeysInRange: string[],
+  options: BudgetProgressOptions = {},
+): BudgetProgress[] {
+  const includePlanned = options.includePlanned !== false;
+  const scheduled = options.scheduled ?? [];
+  const installmentPlans = options.installmentPlans ?? [];
+  const accounts = options.accounts ?? [];
+  const monthCount = Math.max(1, monthKeysInRange.length);
+
+  return budgets
+    .filter((b) => b.active && b.monthlyLimit > 0)
+    .map((budget) => {
+      const spent = spentForBudgetBetween(transactions, budget, start, end);
+      let plannedSpend = 0;
+      if (includePlanned) {
+        for (const mk of monthKeysInRange) {
+          plannedSpend += plannedForBudget(budget, mk, scheduled, installmentPlans, accounts);
+        }
+      }
+      const limit = budget.monthlyLimit * monthCount;
+      const effectiveSpent = spent + plannedSpend;
+      const label = budget.category.trim()
+        ? `${budget.categoryGroup} › ${budget.category}`
+        : budget.categoryGroup;
+      return {
+        budget,
+        label,
+        spent,
+        plannedSpend,
+        effectiveSpent,
+        limit,
+        ratio: limit > 0 ? effectiveSpent / limit : 0,
+        monthKey: monthKeysInRange[0] ?? '',
+      };
+    })
+    .sort((a, b) => b.ratio - a.ratio);
+}
+
 export function budgetProgressForMonth(
   budgets: CategoryBudget[],
   transactions: Transaction[],

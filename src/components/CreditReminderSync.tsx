@@ -6,12 +6,12 @@ import { syncCreditReminders } from '../notifications/creditReminders';
 
 /** Programa recordatorios locales cuando cambian cortes/pagos/cuotas. */
 export function CreditReminderSync() {
-  const { creditRemindersEnabled } = usePreferences();
+  const { creditRemindersEnabled, reminderLeadDays } = usePreferences();
   const { upcomingItems } = useTransactions();
 
   useEffect(() => {
-    void syncCreditReminders(creditRemindersEnabled, upcomingItems);
-  }, [creditRemindersEnabled, upcomingItems]);
+    void syncCreditReminders(creditRemindersEnabled, upcomingItems, reminderLeadDays);
+  }, [creditRemindersEnabled, upcomingItems, reminderLeadDays]);
 
   return null;
 }

@@ -1,17 +1,19 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { MoreStackParamList } from '../navigation/moreTypes';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AccountBalanceRow } from '../components/AccountBalanceRow';
 import { BudgetProgressList } from '../components/BudgetProgressList';
 import { useTransactions } from '../context/TransactionsContext';
-import { budgetProgressForMonth } from '../domain/budgets';
+import { budgetProgressForDateRange, budgetProgressForMonth } from '../domain/budgets';
 import { topCategorySpendingBetween } from '../domain/categorySpend';
 import { formatMonthTitle } from '../domain/calendar';
 import { distinctMonthKeys, EMPTY_HISTORY_FILTER } from '../domain/historyFilters';
 import { computeNetWorth } from '../domain/netWorth';
-import { flowBetween, periodBounds, type ReportPeriodKind } from '../domain/reportPeriod';
+import { flowBetween, monthsSpanned, periodBounds, type ReportPeriodKind } from '../domain/reportPeriod';
 import { currentMonthKey } from '../domain/summaries';
 import { colors } from '../theme';
 import { formatCurrency } from '../utils/format';
@@ -40,7 +42,7 @@ function MonthChip({
 }
 
 export function InformeScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<MoreStackParamList>>();
   const {
     loading,
     monthFlow,
@@ -81,18 +83,35 @@ export function InformeScreen() {
     [periodKind, monthKey, monthFlow, transactions, bounds],
   );
 
+  const monthKeysInRange = useMemo(
+    () => monthsSpanned(bounds.start, bounds.end),
+    [bounds.start, bounds.end],
+  );
+
   const selectedBudgetProgress = useMemo(() => {
-    if (periodKind !== 'month') {
-      return [];
+    if (periodKind === 'month') {
+      return monthKey === monthFlow.monthKey
+        ? budgetProgress
+        : budgetProgressForMonth(budgets, transactions, monthKey, {
+            includePlanned: true,
+            scheduled: scheduledPayments,
+            installmentPlans,
+            accounts,
+          });
     }
-    return monthKey === monthFlow.monthKey
-      ? budgetProgress
-      : budgetProgressForMonth(budgets, transactions, monthKey, {
-          includePlanned: true,
-          scheduled: scheduledPayments,
-          installmentPlans,
-          accounts,
-        });
+    return budgetProgressForDateRange(
+      budgets,
+      transactions,
+      bounds.start,
+      bounds.end,
+      monthKeysInRange,
+      {
+        includePlanned: true,
+        scheduled: scheduledPayments,
+        installmentPlans,
+        accounts,
+      },
+    );
   }, [
     periodKind,
     monthKey,
@@ -103,6 +122,8 @@ export function InformeScreen() {
     scheduledPayments,
     installmentPlans,
     accounts,
+    bounds,
+    monthKeysInRange,
   ]);
 
   const net = useMemo(
@@ -124,7 +145,7 @@ export function InformeScreen() {
       categoryGroup: group,
       query: category || label,
     });
-    navigation.navigate('Historial' as never);
+    navigation.navigate('Historial');
   };
 
   return (
@@ -211,11 +232,14 @@ export function InformeScreen() {
           ))
         )}
 
-        {periodKind === 'month' ? (
-          <BudgetProgressList items={selectedBudgetProgress} monthKey={monthKey} />
-        ) : (
-          <Text style={styles.meta}>Presupuesto mensual: cambia a vista «Mes» para ver barras.</Text>
-        )}
+        <BudgetProgressList
+          items={selectedBudgetProgress}
+          monthKey={
+            periodKind === 'month'
+              ? monthKey
+              : `${bounds.label} (${monthKeysInRange.length} meses)`
+          }
+        />
 
         <Text style={styles.section}>Todas las cuentas</Text>
         <View style={styles.list}>

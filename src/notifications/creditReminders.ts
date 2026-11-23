@@ -17,17 +17,17 @@ async function getNotifications(): Promise<NotificationsModule | null> {
   }
 }
 
-function reminderDate(isoDay: string, hour = 9): Date {
-  const d = new Date(`${isoDay}T00:00:00`);
+function reminderAt(isoDay: string, daysBefore: number, hour = 9): Date | null {
+  const d = new Date(`${isoDay}T12:00:00`);
+  d.setDate(d.getDate() - daysBefore);
   d.setHours(hour, 0, 0, 0);
-  const dayBefore = new Date(d);
-  dayBefore.setDate(dayBefore.getDate() - 1);
-  return dayBefore.getTime() > Date.now() ? dayBefore : d;
+  return d.getTime() > Date.now() ? d : null;
 }
 
 export async function syncCreditReminders(
   enabled: boolean,
   upcoming: UpcomingItem[],
+  leadDays: number[] = [1],
 ): Promise<void> {
   const Notifications = await getNotifications();
   if (!Notifications) {
@@ -70,27 +70,33 @@ export async function syncCreditReminders(
       u.kind === 'loan_due',
   );
 
+  const sortedLeads = [...new Set(leadDays)].filter((d) => d > 0).sort((a, b) => b - a);
+  const leads = sortedLeads.length ? sortedLeads : [1];
+
   for (const item of targets) {
-    const trigger = reminderDate(item.date);
-    if (trigger.getTime() <= Date.now()) {
-      continue;
-    }
     const body =
       item.signedAmount !== 0
         ? `Monto orientativo ${Math.abs(item.signedAmount).toLocaleString('es-CO')} COP`
         : item.subtitle ?? item.account;
 
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: item.title,
-        body,
-        data: { id: item.id },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: trigger,
-      },
-    });
+    for (const lead of leads) {
+      const trigger = reminderAt(item.date, lead);
+      if (!trigger) {
+        continue;
+      }
+      const prefix = lead === 1 ? 'Mañana' : `En ${lead} días`;
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `${prefix}: ${item.title}`,
+          body,
+          data: { id: `${item.id}-${lead}d` },
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: trigger,
+        },
+      });
+    }
   }
 
 }

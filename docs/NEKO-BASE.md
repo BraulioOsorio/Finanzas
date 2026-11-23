@@ -43,6 +43,10 @@ NEKO ([nekomoney.app](https://www.nekomoney.app/es)) es una app **cerrada** (iOS
 | Recordatorio abono préstamo | Cuentas → día de abono + Ajustes → recordatorios |
 | Disponible para gastar (compromisos) | Inicio → chips de horizonte |
 | Alerta cuenta en negativo (futuro) | Inicio y Calendario |
+| Recordatorios 7 / 2 / 1 día | Ajustes |
+| Presupuesto trimestre / año | Informe |
+| PIN + biometría | Ajustes → Modo seguro |
+| Navegación compacta | 5 pestañas + **Más** |
 | Tabla amortización préstamo | Deudas → por cuenta |
 
 ## Qué NO está aún (premium / complejo en NEKO)
