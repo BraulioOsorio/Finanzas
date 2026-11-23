@@ -1,5 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { BrandIcon } from './BrandIcon';
+import { resolveBrandForTransaction } from '../domain/brands/resolveBrand';
 import { colors } from '../theme';
 import type { Transaction } from '../types';
 import { formatCurrency, formatShortDate } from '../utils/format';
@@ -15,6 +17,7 @@ export function TransactionRow({ item, onDelete }: Props) {
   const sign = isTransfer ? (item.signedAmount >= 0 ? '+' : '−') : isIncome ? '+' : '−';
   const displayAmount = isTransfer ? Math.abs(item.signedAmount) : item.amount;
 
+  const brand = resolveBrandForTransaction(item);
   const title = item.description || item.category || item.nekoType;
   const metaParts = [item.account, item.nekoType, item.categoryGroup]
     .map((p) => p.trim())
@@ -23,6 +26,7 @@ export function TransactionRow({ item, onDelete }: Props) {
 
   return (
     <View style={styles.row}>
+      <BrandIcon brand={brand} size={42} />
       <View style={styles.leading}>
         <Text style={styles.category} numberOfLines={1}>
           {title}

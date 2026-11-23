@@ -41,7 +41,10 @@ El modelo de datos y pantallas siguen la lógica de **[NEKO: Control de Gastos](
 - **Importar CSV de Neko** (pestaña Importar): mismo formato que el export de la app Neko
 - Campos guardados: fecha, tipo, descripción, cuenta, grupo/categoría, notas
 - Las transferencias y pagos de tarjeta se listan pero **no mueven el saldo** (como en un libro mayor)
+- **Iconos de marca**: bancos, fintech y comercios CO (logos cuando cargan + iniciales de respaldo)
 - Datos guardados en el dispositivo (AsyncStorage)
+
+Ampliar marcas en `src/domain/brands/brandCatalog.ts` o PNG en `assets/brands/` (ver README ahí).
 
 ### Verificar un CSV (desarrollo)
 
