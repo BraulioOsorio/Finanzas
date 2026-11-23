@@ -32,7 +32,8 @@ El modelo de datos y pantallas siguen la lógica de **[NEKO: Control de Gastos](
 ## Funciones actuales
 
 - Inicio al estilo NEKO: disponible aproximado, flujo del mes, cuentas principales
-- Pestaña **Calendario**: saldo al cierre de cada día (filtrar por cuenta), estilo NEKO
+- Pestaña **Plan**: quincena, arriendo, suscripciones (mensual / quincenal / semanal)
+- Pestaña **Calendario**: saldo por día + proyección futura según el Plan
 - Pestaña **Cuentas**: saldo por cuenta según movimientos
 - Resumen: saldo, total ingresos y gastos
 - Registrar movimientos con categoría y nota

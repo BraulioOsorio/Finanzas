@@ -1,9 +1,20 @@
-import type { Transaction } from '../types';
+import { occurrencesInRange, signedAmountForScheduled } from './scheduleProjection';
+import type { ScheduledPayment, Transaction } from '../types';
+
+export type DayScheduledItem = {
+  id: string;
+  title: string;
+  signedAmount: number;
+  account: string;
+};
 
 export type DaySnapshot = {
   date: string;
   balance: number;
   transactions: Transaction[];
+  scheduled: DayScheduledItem[];
+  /** true si el saldo incluye eventos programados (hoy o futuro) */
+  includesProjection: boolean;
 };
 
 export function parseMonthKey(monthKey: string): { year: number; month: number } {
@@ -38,11 +49,46 @@ export function weekdayIndexMonFirst(isoDate: string): number {
   return day === 0 ? 6 : day - 1;
 }
 
+function scheduledByDate(
+  items: ScheduledPayment[],
+  monthStart: string,
+  monthEnd: string,
+  accountFilter?: string,
+): Map<string, DayScheduledItem[]> {
+  const map = new Map<string, DayScheduledItem[]>();
+
+  for (const item of items) {
+    if (!item.active) {
+      continue;
+    }
+    if (accountFilter && item.account.trim() !== accountFilter) {
+      continue;
+    }
+    const dates = occurrencesInRange(item, monthStart, monthEnd);
+    const signed = signedAmountForScheduled(item);
+    for (const date of dates) {
+      const list = map.get(date) ?? [];
+      list.push({
+        id: `${item.id}-${date}`,
+        title: item.title,
+        signedAmount: signed,
+        account: item.account,
+      });
+      map.set(date, list);
+    }
+  }
+
+  return map;
+}
+
 export function buildMonthCalendar(
   transactions: Transaction[],
   monthKey: string,
   accountFilter?: string,
+  scheduled: ScheduledPayment[] = [],
+  todayIso?: string,
 ): { days: DaySnapshot[]; startPadding: number } {
+  const today = todayIso ?? new Date().toISOString().slice(0, 10);
   const filtered = accountFilter
     ? transactions.filter((t) => t.account.trim() === accountFilter)
     : transactions;
@@ -64,6 +110,9 @@ export function buildMonthCalendar(
   }
 
   const totalDays = daysInMonth(monthKey);
+  const monthEnd = padDay(monthKey, totalDays);
+  const scheduledMap = scheduledByDate(scheduled, monthStart, monthEnd, accountFilter);
+
   const days: DaySnapshot[] = [];
 
   for (let d = 1; d <= totalDays; d++) {
@@ -72,7 +121,19 @@ export function buildMonthCalendar(
     for (const t of dayTxs) {
       running += t.signedAmount;
     }
-    days.push({ date, balance: running, transactions: dayTxs });
+
+    const dayScheduled = date >= today ? (scheduledMap.get(date) ?? []) : [];
+    for (const s of dayScheduled) {
+      running += s.signedAmount;
+    }
+
+    days.push({
+      date,
+      balance: running,
+      transactions: dayTxs,
+      scheduled: dayScheduled,
+      includesProjection: date >= today && dayScheduled.length > 0,
+    });
   }
 
   const startPadding = days.length > 0 ? weekdayIndexMonFirst(days[0].date) : 0;

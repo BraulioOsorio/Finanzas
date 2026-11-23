@@ -43,3 +43,24 @@ export type ImportResult = {
   skipped: number;
   errors: string[];
 };
+
+export type ScheduleFrequency = 'once' | 'weekly' | 'biweekly' | 'monthly';
+
+/** Pagos o ingresos programados (quincena, suscripciones, etc.) */
+export type ScheduledPayment = {
+  id: string;
+  title: string;
+  kind: 'income' | 'expense';
+  amount: number;
+  account: string;
+  nekoType: string;
+  categoryGroup: string;
+  category: string;
+  frequency: ScheduleFrequency;
+  /** Primer día (o próxima fecha) YYYY-MM-DD */
+  startDate: string;
+  endDate?: string;
+  active: boolean;
+};
+
+export type ScheduledPaymentDraft = Omit<ScheduledPayment, 'id'>;

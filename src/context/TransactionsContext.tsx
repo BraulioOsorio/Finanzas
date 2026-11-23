@@ -20,8 +20,15 @@ import {
 } from '../domain/summaries';
 import { DEFAULT_ACCOUNTS } from '../domain/nekoCatalog';
 import { applyImport, parseNekoCsv } from '../import/parseNekoCsv';
+import { loadScheduledPayments, saveScheduledPayments } from '../storage/scheduled';
 import { loadTransactions, saveTransactions } from '../storage/transactions';
-import type { ImportResult, Transaction, TransactionDraft } from '../types';
+import type {
+  ImportResult,
+  ScheduledPayment,
+  ScheduledPaymentDraft,
+  Transaction,
+  TransactionDraft,
+} from '../types';
 
 type TransactionsContextValue = {
   transactions: Transaction[];
@@ -39,6 +46,10 @@ type TransactionsContextValue = {
   liquidAvailable: number;
   monthFlow: MonthFlow;
   accountNames: string[];
+  scheduledPayments: ScheduledPayment[];
+  addScheduledPayment: (draft: ScheduledPaymentDraft) => Promise<void>;
+  removeScheduledPayment: (id: string) => Promise<void>;
+  toggleScheduledPayment: (id: string, active: boolean) => Promise<void>;
 };
 
 const TransactionsContext = createContext<TransactionsContextValue | null>(null);
@@ -51,14 +62,19 @@ function sortByDateDesc(items: Transaction[]): Transaction[] {
 
 export function TransactionsProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const stored = await loadTransactions();
+      const [stored, scheduled] = await Promise.all([
+        loadTransactions(),
+        loadScheduledPayments(),
+      ]);
       if (!cancelled) {
         setTransactions(sortByDateDesc(stored));
+        setScheduledPayments(scheduled);
         setLoading(false);
       }
     })();
@@ -92,6 +108,38 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       await persist(transactions.filter((t) => t.id !== id));
     },
     [persist, transactions],
+  );
+
+  const persistScheduled = useCallback(async (next: ScheduledPayment[]) => {
+    setScheduledPayments(next);
+    await saveScheduledPayments(next);
+  }, []);
+
+  const addScheduledPayment = useCallback(
+    async (draft: ScheduledPaymentDraft) => {
+      const entry: ScheduledPayment = {
+        ...draft,
+        id: `sch-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      };
+      await persistScheduled([entry, ...scheduledPayments]);
+    },
+    [persistScheduled, scheduledPayments],
+  );
+
+  const removeScheduledPayment = useCallback(
+    async (id: string) => {
+      await persistScheduled(scheduledPayments.filter((p) => p.id !== id));
+    },
+    [persistScheduled, scheduledPayments],
+  );
+
+  const toggleScheduledPayment = useCallback(
+    async (id: string, active: boolean) => {
+      await persistScheduled(
+        scheduledPayments.map((p) => (p.id === id ? { ...p, active } : p)),
+      );
+    },
+    [persistScheduled, scheduledPayments],
   );
 
   const importNekoCsv = useCallback(
@@ -168,6 +216,10 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       liquidAvailable,
       monthFlow,
       accountNames,
+      scheduledPayments,
+      addScheduledPayment,
+      removeScheduledPayment,
+      toggleScheduledPayment,
     }),
     [
       transactions,
@@ -184,6 +236,10 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       liquidAvailable,
       monthFlow,
       accountNames,
+      scheduledPayments,
+      addScheduledPayment,
+      removeScheduledPayment,
+      toggleScheduledPayment,
     ],
   );
 

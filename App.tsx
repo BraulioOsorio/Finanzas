@@ -11,6 +11,7 @@ import { AddScreen } from './src/screens/AddScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { ImportScreen } from './src/screens/ImportScreen';
+import { PlanScreen } from './src/screens/PlanScreen';
 import { colors } from './src/theme';
 
 const Tab = createBottomTabNavigator();
@@ -65,6 +66,13 @@ export default function App() {
               component={CalendarScreen}
               options={{
                 tabBarLabel: ({ focused }) => <TabLabel label="Calendario" focused={focused} />,
+              }}
+            />
+            <Tab.Screen
+              name="Plan"
+              component={PlanScreen}
+              options={{
+                tabBarLabel: ({ focused }) => <TabLabel label="Plan" focused={focused} />,
               }}
             />
             <Tab.Screen

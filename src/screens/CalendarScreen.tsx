@@ -18,14 +18,14 @@ import { formatCurrency, formatShortDate } from '../utils/format';
 const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
 export function CalendarScreen() {
-  const { transactions, accountNames } = useTransactions();
+  const { transactions, accountNames, scheduledPayments } = useTransactions();
   const [monthKey, setMonthKey] = useState(monthKeyFromDate(new Date()));
   const [accountFilter, setAccountFilter] = useState<string | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const { days, startPadding } = useMemo(
-    () => buildMonthCalendar(transactions, monthKey, accountFilter),
-    [transactions, monthKey, accountFilter],
+    () => buildMonthCalendar(transactions, monthKey, accountFilter, scheduledPayments),
+    [transactions, monthKey, accountFilter, scheduledPayments],
   );
 
   const selected = selectedDate ? days.find((d) => d.date === selectedDate) : undefined;
@@ -44,7 +44,7 @@ export function CalendarScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Calendario</Text>
         <Text style={styles.subtitle}>
-          Saldo al cierre de cada día (suma de cuentas según tus movimientos)
+          Saldo al cierre de cada día. Los días futuros incluyen tu Plan (quincena, pagos fijos).
         </Text>
 
         <View style={styles.monthRow}>
@@ -100,7 +100,8 @@ export function CalendarScreen() {
             const dayNum = Number(day.date.slice(-2));
             const isToday = day.date === todayIso;
             const isSelected = day.date === selectedDate;
-            const future = day.date > todayIso;
+            const isFuture = day.date > todayIso;
+            const isProjected = day.date >= todayIso;
             const positive = day.balance >= 0;
 
             return (
@@ -114,23 +115,23 @@ export function CalendarScreen() {
                 onPress={() => setSelectedDate(day.date)}
               >
                 <Text style={[styles.cellDay, isToday && styles.cellDayToday]}>{dayNum}</Text>
-                {!future ? (
-                  <Text
-                    style={[
-                      styles.cellBalance,
-                      positive ? styles.balancePositive : styles.balanceNegative,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {formatCompactMoney(day.balance)}
-                  </Text>
-                ) : (
-                  <Text style={styles.cellFuture}>·</Text>
-                )}
-                {day.transactions.length > 0 ? (
+                <Text
+                  style={[
+                    styles.cellBalance,
+                    positive ? styles.balancePositive : styles.balanceNegative,
+                    isProjected && styles.cellBalanceProjected,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {formatCompactMoney(day.balance)}
+                  {isFuture ? '›' : ''}
+                </Text>
+                {(day.transactions.length > 0 || day.scheduled.length > 0) ? (
                   <View style={styles.dotRow}>
-                    {day.transactions.length > 3 ? (
-                      <Text style={styles.dotCount}>{day.transactions.length}</Text>
+                    {day.transactions.length + day.scheduled.length > 3 ? (
+                      <Text style={styles.dotCount}>
+                        {day.transactions.length + day.scheduled.length}
+                      </Text>
                     ) : (
                       day.transactions.map((t) => (
                         <View
@@ -146,6 +147,11 @@ export function CalendarScreen() {
                         />
                       ))
                     )}
+                    {day.scheduled.length > 0 && day.transactions.length < 3
+                      ? day.scheduled.slice(0, 3 - day.transactions.length).map((s) => (
+                          <View key={s.id} style={[styles.dot, styles.dotScheduled]} />
+                        ))
+                      : null}
                   </View>
                 ) : null}
               </Pressable>
@@ -159,16 +165,27 @@ export function CalendarScreen() {
               <Text style={styles.detailTitle}>{formatShortDate(selected.date)}</Text>
               <Text style={styles.detailBalance}>
                 Saldo: {formatCurrency(selected.balance)}
+                {selected.date >= todayIso ? ' (con proyección)' : ''}
               </Text>
-              {selected.transactions.length === 0 ? (
+              {selected.scheduled.length > 0 ? (
+                <View style={styles.scheduledBlock}>
+                  <Text style={styles.scheduledTitle}>Programado</Text>
+                  {selected.scheduled.map((s) => (
+                    <Text key={s.id} style={styles.scheduledLine}>
+                      {s.title}: {formatCurrency(Math.abs(s.signedAmount))}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
+              {selected.transactions.length === 0 && selected.scheduled.length === 0 ? (
                 <Text style={styles.detailEmpty}>Sin movimientos este día</Text>
-              ) : (
+              ) : selected.transactions.length > 0 ? (
                 <View style={styles.detailList}>
                   {selected.transactions.map((t) => (
                     <TransactionRow key={t.id} item={t} />
                   ))}
                 </View>
-              )}
+              ) : null}
             </>
           ) : (
             <Text style={styles.detailHint}>Toca un día para ver entradas, salidas y saldo.</Text>
@@ -241,12 +258,16 @@ const styles = StyleSheet.create({
   cellBalance: { fontSize: 10, fontWeight: '700', marginTop: 4 },
   balancePositive: { color: colors.income },
   balanceNegative: { color: colors.expense },
-  cellFuture: { color: colors.textMuted, marginTop: 6 },
+  cellBalanceProjected: { opacity: 0.85, fontStyle: 'italic' },
   dotRow: { flexDirection: 'row', gap: 3, marginTop: 4, alignItems: 'center' },
   dot: { width: 5, height: 5, borderRadius: 3 },
   dotIncome: { backgroundColor: colors.income },
   dotExpense: { backgroundColor: colors.expense },
   dotTransfer: { backgroundColor: '#94a3b8' },
+  dotScheduled: { backgroundColor: colors.accent },
+  scheduledBlock: { gap: 4, marginTop: 4 },
+  scheduledTitle: { color: colors.accent, fontSize: 13, fontWeight: '700' },
+  scheduledLine: { color: colors.textMuted, fontSize: 13 },
   dotCount: { color: colors.textMuted, fontSize: 9, fontWeight: '700' },
   detailCard: {
     marginTop: 12,
