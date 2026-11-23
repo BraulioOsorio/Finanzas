@@ -10,7 +10,8 @@ type Nav = NativeStackNavigationProp<MoreStackParamList>;
 
 const LINKS: { key: keyof MoreStackParamList; title: string; desc: string }[] = [
   { key: 'Informe', title: 'Informe', desc: 'Patrimonio, flujo y categorías' },
-  { key: 'Historial', title: 'Historial', desc: 'Buscar y editar movimientos' },
+  { key: 'Buscar', title: 'Buscar', desc: 'Movimientos por texto en toda la app' },
+  { key: 'Historial', title: 'Historial', desc: 'Filtros y editar movimientos' },
   { key: 'Cuentas', title: 'Cuentas', desc: 'Bancos, tarjetas, saldos' },
   { key: 'Deudas', title: 'Deudas', desc: 'Préstamos y amortización' },
   { key: 'Categorias', title: 'Categorías', desc: 'Árbol Neko y presupuestos' },

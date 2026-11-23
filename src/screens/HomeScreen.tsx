@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AccountBalanceRow } from '../components/AccountBalanceRow';
@@ -19,6 +20,7 @@ import { colors } from '../theme';
 import { formatCurrency } from '../utils/format';
 
 export function HomeScreen() {
+  const navigation = useNavigation();
   const {
     loading,
     liquidAvailable,
@@ -59,6 +61,14 @@ export function HomeScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.greeting}>Finanzas</Text>
         <Text style={styles.subtitle}>Resumen al estilo NEKO (datos en tu teléfono)</Text>
+        <Pressable
+          style={styles.searchPill}
+          onPress={() =>
+            navigation.dispatch(CommonActions.navigate({ name: 'Más', params: { screen: 'Buscar' } }))
+          }
+        >
+          <Text style={styles.searchPillText}>Buscar movimientos…</Text>
+        </Pressable>
 
         <TodayAgenda items={todayAgenda} tomorrow={tomorrowHeadline} />
 
@@ -159,6 +169,16 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 32, gap: 16 },
   greeting: { color: colors.text, fontSize: 28, fontWeight: '800' },
   subtitle: { color: colors.textMuted, fontSize: 14, marginTop: -8, lineHeight: 20 },
+  searchPill: {
+    marginTop: 8,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  searchPillText: { color: colors.textMuted, fontSize: 15 },
   balanceCard: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: 20,

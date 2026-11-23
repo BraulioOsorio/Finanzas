@@ -8,6 +8,7 @@ import { HistoryScreen } from '../screens/HistoryScreen';
 import { ImportScreen } from '../screens/ImportScreen';
 import { InformeScreen } from '../screens/InformeScreen';
 import { MoreHubScreen } from '../screens/MoreHubScreen';
+import { SearchScreen } from '../screens/SearchScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { colors } from '../theme';
 
@@ -20,6 +21,7 @@ const TITLES: Partial<Record<keyof MoreStackParamList, string>> = {
   Deudas: 'Deudas',
   Categorias: 'Categorías',
   Importar: 'Datos',
+  Buscar: 'Buscar',
   Ajustes: 'Ajustes',
 };
 
@@ -43,6 +45,7 @@ export function MoreStack() {
       <Stack.Screen name="Deudas" component={DeudasScreen} />
       <Stack.Screen name="Categorias" component={CategoriesScreen} />
       <Stack.Screen name="Importar" component={ImportScreen} />
+      <Stack.Screen name="Buscar" component={SearchScreen} />
       <Stack.Screen name="Ajustes" component={SettingsScreen} />
     </Stack.Navigator>
   );

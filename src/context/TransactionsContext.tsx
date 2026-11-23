@@ -30,6 +30,11 @@ import {
 } from '../domain/summaries';
 import { loadAccounts, saveAccounts } from '../storage/accounts';
 import { loadBudgets, saveBudgets } from '../storage/budgets';
+import {
+  reorderCategoryInGroup,
+  reorderGroup,
+  renameGroupKey,
+} from '../domain/category/treeOrder';
 import { loadCategoryTree, saveCategoryTree, type CategoryTree } from '../storage/categoryTree';
 import { applyImport, parseNekoCsv } from '../import/parseNekoCsv';
 import { buildTodayAgenda, buildTomorrowHeadline } from '../domain/today';
@@ -87,13 +92,21 @@ type TransactionsContextValue = {
   saveCategoryTreeState: (tree: CategoryTree) => Promise<void>;
   addCategoryGroup: (name: string) => Promise<void>;
   addCategoryToGroup: (group: string, category: string) => Promise<void>;
+  renameCategoryGroup: (from: string, to: string) => Promise<void>;
+  removeCategoryGroup: (group: string) => Promise<void>;
+  renameCategoryInGroup: (group: string, from: string, to: string) => Promise<void>;
+  removeCategoryInGroup: (group: string, category: string) => Promise<void>;
+  moveCategoryGroup: (group: string, direction: -1 | 1) => Promise<void>;
+  moveCategoryInGroup: (group: string, category: string, direction: -1 | 1) => Promise<void>;
   budgets: CategoryBudget[];
   budgetProgress: BudgetProgress[];
   creditCardSummaries: CreditCardSummary[];
   debtSummaries: DebtBucketSummary[];
   addBudget: (draft: CategoryBudgetDraft) => Promise<void>;
+  updateBudget: (id: string, monthlyLimit: number) => Promise<void>;
   removeBudget: (id: string) => Promise<void>;
   toggleBudget: (id: string, active: boolean) => Promise<void>;
+  addStarterAccounts: () => Promise<void>;
   scheduledPayments: ScheduledPayment[];
   addScheduledPayment: (draft: ScheduledPaymentDraft) => Promise<void>;
   removeScheduledPayment: (id: string) => Promise<void>;
@@ -405,6 +418,185 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [categoryTree, persistCategoryTree],
   );
 
+  const patchCategoryGroupInData = useCallback(
+    async (from: string, to: string) => {
+      const fg = from.trim();
+      const tg = to.trim();
+      if (!fg || !tg || fg === tg) {
+        return;
+      }
+      const nextTx = transactions.map((t) =>
+        t.categoryGroup.trim() === fg ? { ...t, categoryGroup: tg } : t,
+      );
+      if (nextTx !== transactions) {
+        await persist(nextTx);
+      }
+      await persistBudgets(
+        budgets.map((b) => (b.categoryGroup.trim() === fg ? { ...b, categoryGroup: tg } : b)),
+      );
+      const nextSch = scheduledPayments.map((p) =>
+        p.categoryGroup.trim() === fg ? { ...p, categoryGroup: tg } : p,
+      );
+      setScheduledPayments(nextSch);
+      await saveScheduledPayments(nextSch);
+      const nextIns = installmentPlans.map((p) =>
+        p.categoryGroup.trim() === fg ? { ...p, categoryGroup: tg } : p,
+      );
+      setInstallmentPlans(nextIns);
+      await saveInstallmentPlans(nextIns);
+    },
+    [transactions, persist, budgets, persistBudgets, scheduledPayments, installmentPlans],
+  );
+
+  const patchCategoryInData = useCallback(
+    async (group: string, from: string, to: string) => {
+      const fc = from.trim();
+      const tc = to.trim();
+      if (!group || !fc || !tc || fc === tc) {
+        return;
+      }
+      const nextTx = transactions.map((t) =>
+        t.categoryGroup.trim() === group.trim() && t.category.trim() === fc
+          ? { ...t, category: tc }
+          : t,
+      );
+      if (nextTx !== transactions) {
+        await persist(nextTx);
+      }
+      await persistBudgets(
+        budgets.map((b) =>
+          b.categoryGroup.trim() === group.trim() && b.category.trim() === fc
+            ? { ...b, category: tc }
+            : b,
+        ),
+      );
+      const nextSch = scheduledPayments.map((p) =>
+        p.categoryGroup.trim() === group.trim() && p.category.trim() === fc
+          ? { ...p, category: tc }
+          : p,
+      );
+      setScheduledPayments(nextSch);
+      await saveScheduledPayments(nextSch);
+      const nextIns = installmentPlans.map((p) =>
+        p.categoryGroup.trim() === group.trim() && p.category.trim() === fc
+          ? { ...p, category: tc }
+          : p,
+      );
+      setInstallmentPlans(nextIns);
+      await saveInstallmentPlans(nextIns);
+    },
+    [transactions, persist, budgets, persistBudgets, scheduledPayments, installmentPlans],
+  );
+
+  const renameCategoryGroup = useCallback(
+    async (from: string, to: string) => {
+      const nextTree = renameGroupKey(categoryTree, from, to);
+      if (!nextTree) {
+        return;
+      }
+      await patchCategoryGroupInData(from, to);
+      await persistCategoryTree(nextTree);
+    },
+    [categoryTree, patchCategoryGroupInData, persistCategoryTree],
+  );
+
+  const removeCategoryGroup = useCallback(
+    async (group: string) => {
+      if (!categoryTree[group]) {
+        return;
+      }
+      const { [group]: _removed, ...rest } = categoryTree;
+      await persistCategoryTree(rest);
+    },
+    [categoryTree, persistCategoryTree],
+  );
+
+  const renameCategoryInGroup = useCallback(
+    async (group: string, from: string, to: string) => {
+      const tc = to.trim();
+      const list = categoryTree[group];
+      if (!list || !tc) {
+        return;
+      }
+      const nextList = list.map((c) => (c === from ? tc : c));
+      await patchCategoryInData(group, from, tc);
+      await persistCategoryTree({ ...categoryTree, [group]: nextList });
+    },
+    [categoryTree, patchCategoryInData, persistCategoryTree],
+  );
+
+  const removeCategoryInGroup = useCallback(
+    async (group: string, category: string) => {
+      if (!categoryTree[group]) {
+        return;
+      }
+      await persistCategoryTree({
+        ...categoryTree,
+        [group]: categoryTree[group].filter((c) => c !== category),
+      });
+    },
+    [categoryTree, persistCategoryTree],
+  );
+
+  const moveCategoryGroup = useCallback(
+    async (group: string, direction: -1 | 1) => {
+      await persistCategoryTree(reorderGroup(categoryTree, group, direction));
+    },
+    [categoryTree, persistCategoryTree],
+  );
+
+  const moveCategoryInGroup = useCallback(
+    async (group: string, category: string, direction: -1 | 1) => {
+      await persistCategoryTree(reorderCategoryInGroup(categoryTree, group, category, direction));
+    },
+    [categoryTree, persistCategoryTree],
+  );
+
+  const updateBudget = useCallback(
+    async (id: string, monthlyLimit: number) => {
+      if (monthlyLimit <= 0) {
+        return;
+      }
+      await persistBudgets(
+        budgets.map((b) => (b.id === id ? { ...b, monthlyLimit: Math.round(monthlyLimit) } : b)),
+      );
+    },
+    [budgets, persistBudgets],
+  );
+
+  const addStarterAccounts = useCallback(async () => {
+    const existing = new Set(accounts.map((a) => a.name.trim().toLowerCase()));
+    const seeds: AccountDefDraft[] = [
+      {
+        name: 'Efectivo',
+        kind: 'cash',
+        liquid: true,
+        notes: '',
+        archived: false,
+      },
+      {
+        name: 'Bancolombia',
+        kind: 'bank',
+        liquid: true,
+        notes: '',
+        archived: false,
+      },
+    ];
+    const additions: AccountDef[] = [];
+    for (const s of seeds) {
+      if (existing.has(s.name.toLowerCase())) {
+        continue;
+      }
+      additions.push({
+        ...applyCreditPresetToDraft(s.name, s) as AccountDefDraft,
+        id: `acc-starter-${s.name.toLowerCase()}`,
+      });
+    }
+    if (additions.length) {
+      await persistAccounts([...accounts, ...additions]);
+    }
+  }, [accounts, persistAccounts]);
+
   const updateAccount = useCallback(
     async (id: string, draft: AccountDefDraft) => {
       await persistAccounts(
@@ -623,13 +815,21 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       saveCategoryTreeState,
       addCategoryGroup,
       addCategoryToGroup,
+      renameCategoryGroup,
+      removeCategoryGroup,
+      renameCategoryInGroup,
+      removeCategoryInGroup,
+      moveCategoryGroup,
+      moveCategoryInGroup,
       budgets,
       budgetProgress: budgetProg,
       creditCardSummaries: creditSummary,
       debtSummaries: debtSummary,
       addBudget,
+      updateBudget,
       removeBudget,
       toggleBudget,
+      addStarterAccounts,
       scheduledPayments,
       addScheduledPayment,
       removeScheduledPayment,
@@ -674,10 +874,18 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       saveCategoryTreeState,
       addCategoryGroup,
       addCategoryToGroup,
+      renameCategoryGroup,
+      removeCategoryGroup,
+      renameCategoryInGroup,
+      removeCategoryInGroup,
+      moveCategoryGroup,
+      moveCategoryInGroup,
       budgets,
       addBudget,
+      updateBudget,
       removeBudget,
       toggleBudget,
+      addStarterAccounts,
       scheduledPayments,
       addScheduledPayment,
       removeScheduledPayment,

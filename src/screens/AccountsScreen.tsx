@@ -12,7 +12,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountBalanceRow } from '../components/AccountBalanceRow';
 import { AccountEditorModal } from '../components/AccountEditorModal';
 import { accountDefByName } from '../domain/accounts/resolveAccounts';
+import { computeSafeToSpend } from '../domain/safeToSpend';
 import { computeAccountBalances } from '../domain/summaries';
+import { usePreferences } from '../context/PreferencesContext';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
 import type { AccountDef } from '../types';
@@ -26,7 +28,10 @@ export function AccountsScreen() {
     liquidAvailable,
     accounts,
     transactions,
+    upcomingItems,
+    scheduledPayments,
   } = useTransactions();
+  const { safeToSpendHorizon } = usePreferences();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<AccountDef | null>(null);
   const [draftName, setDraftName] = useState<string | undefined>();
@@ -52,6 +57,18 @@ export function AccountsScreen() {
         return { balance: bal, def };
       });
   }, [accounts, transactions]);
+
+  const safeByAccount = useMemo(() => {
+    const snap = computeSafeToSpend(
+      safeToSpendHorizon,
+      accounts,
+      computeAccountBalances(transactions),
+      upcomingItems,
+      undefined,
+      scheduledPayments,
+    );
+  return new Map(snap.byLiquidAccount.map((r) => [r.account, r.afterPlanned]));
+  }, [safeToSpendHorizon, accounts, transactions, upcomingItems, scheduledPayments]);
 
   const openNew = () => {
     setEditing(null);
@@ -108,6 +125,7 @@ export function AccountsScreen() {
           renderItem={({ item }) => (
             <AccountBalanceRow
               item={item.balance}
+              safeAfterPlanned={safeByAccount.get(item.balance.account)}
               onPress={() => openEdit(item.balance.account)}
             />
           )}

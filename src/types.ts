@@ -37,6 +37,8 @@ export type AccountDef = {
   installmentStatementLagMonths?: number;
   /** Monto original del préstamo / deuda (para barra de amortización) */
   loanPrincipal?: number;
+  /** Tasa nominal anual % sobre saldo deudor (capital vs interés en amortización) */
+  loanInterestRateNA?: number;
   /** Día del mes recordatorio de abono (1–28) */
   loanPaymentDay?: number;
 };

@@ -6,5 +6,6 @@ export type MoreStackParamList = {
   Deudas: undefined;
   Categorias: undefined;
   Importar: undefined;
+  Buscar: undefined;
   Ajustes: undefined;
 };

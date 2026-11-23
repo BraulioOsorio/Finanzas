@@ -48,6 +48,7 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
   const [minimumPaymentPercent, setMinimumPaymentPercent] = useState('');
   const [installmentLag, setInstallmentLag] = useState('');
   const [loanPrincipal, setLoanPrincipal] = useState('');
+  const [loanInterestRateNA, setLoanInterestRateNA] = useState('');
   const [loanPaymentDay, setLoanPaymentDay] = useState('');
   const [archived, setArchived] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -89,6 +90,9 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       );
       setArchived(editing.archived);
       setLoanPrincipal(editing.loanPrincipal ? String(editing.loanPrincipal) : '');
+      setLoanInterestRateNA(
+        editing.loanInterestRateNA != null ? String(editing.loanInterestRateNA) : '',
+      );
       setLoanPaymentDay(editing.loanPaymentDay ? String(editing.loanPaymentDay) : '');
     } else {
       const seed = initialName?.trim() ?? '';
@@ -107,6 +111,7 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       setInstallmentLag('');
       setArchived(false);
       setLoanPrincipal('');
+      setLoanInterestRateNA('');
       setLoanPaymentDay('');
     }
   }, [visible, editing, initialName]);
@@ -206,6 +211,10 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       loanPrincipal:
         kind === 'loan' || name.trim().toLowerCase().includes('deuda')
           ? Number(loanPrincipal.replace(/[^\d]/g, '')) || undefined
+          : undefined,
+      loanInterestRateNA:
+        kind === 'loan' || name.trim().toLowerCase().includes('deuda')
+          ? parseEa(loanInterestRateNA)
           : undefined,
       loanPaymentDay:
         kind === 'loan' || name.trim().toLowerCase().includes('deuda')
@@ -398,6 +407,15 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
                 value={loanPrincipal}
                 onChangeText={setLoanPrincipal}
                 placeholder="Monto que debías al inicio"
+                placeholderTextColor={colors.textMuted}
+              />
+              <Text style={styles.label}>Tasa nominal anual % (opcional)</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="decimal-pad"
+                value={loanInterestRateNA}
+                onChangeText={setLoanInterestRateNA}
+                placeholder="Ej. 18.5"
                 placeholderTextColor={colors.textMuted}
               />
               <Text style={styles.label}>Día recordatorio de abono (1-28)</Text>

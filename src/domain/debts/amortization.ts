@@ -48,19 +48,26 @@ export function buildLoanAmortization(
     .filter((t) => t.account === accountName && isLoanPayment(t))
     .sort((a, b) => a.postedDate.localeCompare(b.postedDate));
 
+  const monthlyRate =
+    def?.loanInterestRateNA && def.loanInterestRateNA > 0
+      ? def.loanInterestRateNA / 12 / 100
+      : 0;
+
   let running = principal ?? Math.max(0, -balance);
   const rows: AmortizationRow[] = [];
 
   for (let i = 0; i < payments.length; i++) {
     const p = payments[i];
     const pay = p.amount;
-    running = Math.max(0, running - pay);
+    const interest = monthlyRate > 0 ? Math.round(running * monthlyRate) : 0;
+    const principalPart = Math.max(0, pay - interest);
+    running = Math.max(0, running - principalPart);
     rows.push({
       index: i + 1,
       date: p.postedDate,
       payment: pay,
-      principal: pay,
-      interest: 0,
+      principal: principalPart,
+      interest: Math.min(interest, pay),
       balanceAfter: running,
       actual: true,
       label: p.description.trim() || p.nekoType,
@@ -76,15 +83,17 @@ export function buildLoanAmortization(
     let idx = rows.length;
     while (remaining > 0 && idx - rows.length < maxProjected) {
       idx += 1;
-      const pay = Math.min(typical, remaining);
-      remaining -= pay;
+      const interest = monthlyRate > 0 ? Math.round(remaining * monthlyRate) : 0;
+      const principalPart = Math.max(0, typical - interest);
+      const pay = principalPart + interest;
+      remaining = Math.max(0, remaining - principalPart);
       cursor = addMonthSameDay(cursor, 1);
       rows.push({
         index: idx,
         date: cursor,
         payment: pay,
-        principal: pay,
-        interest: 0,
+        principal: principalPart,
+        interest,
         balanceAfter: remaining,
         actual: false,
         label: 'Proyección',
@@ -98,7 +107,9 @@ export function buildLoanAmortization(
 
   const note =
     typical > 0
-      ? 'Proyección usa tu abono medio; sin tasa de interés en la cuenta todo va a capital.'
+      ? monthlyRate > 0
+        ? `Proyección con tasa nominal ${def?.loanInterestRateNA}% EA anual (mensual ~${(monthlyRate * 100).toFixed(2)}%).`
+        : 'Proyección usa tu abono medio; indica tasa nominal en la cuenta para separar interés.'
       : 'Registra abonos tipo «Pago de préstamo» para ver historial y proyección.';
 
   return {

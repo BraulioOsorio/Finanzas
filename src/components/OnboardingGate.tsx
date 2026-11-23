@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 
 import { usePreferences } from '../context/PreferencesContext';
 import { useTransactions } from '../context/TransactionsContext';
@@ -9,8 +10,9 @@ import { tokens } from '../tokens';
 type Step = 0 | 1 | 2;
 
 export function OnboardingGate({ children }: { children: ReactNode }) {
+  const navigation = useNavigation();
   const { onboardingComplete, completeOnboarding, prefsLoading } = usePreferences();
-  const { accounts, transactionCount } = useTransactions();
+  const { accounts, transactionCount, addStarterAccounts } = useTransactions();
   const [step, setStep] = useState<Step>(0);
 
   const show = !prefsLoading && !onboardingComplete;
@@ -19,9 +21,21 @@ export function OnboardingGate({ children }: { children: ReactNode }) {
     void completeOnboarding();
   };
 
+  const goMas = (screen: string) => {
+    finish();
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'Más',
+        params: { screen },
+      }),
+    );
+  };
+
   if (!show) {
     return children;
   }
+
+  const activeCount = accounts.filter((a) => !a.archived).length;
 
   return (
     <>
@@ -33,28 +47,43 @@ export function OnboardingGate({ children }: { children: ReactNode }) {
               <>
                 <Text style={styles.title}>Bienvenido a Finanzas</Text>
                 <Text style={styles.body}>
-                  Control tipo NEKO: cuentas, categorías, calendario y datos en tu teléfono. Visual con
-                  nuestros tokens (colores y tipografía propios).
+                  Tus datos en el teléfono: cuentas, categorías, calendario y disponible para gastar con
+                  reglas Colombia (corte, EA, deudas).
                 </Text>
               </>
             ) : null}
             {step === 1 ? (
               <>
-                <Text style={styles.title}>Tus cuentas</Text>
+                <Text style={styles.title}>Cuentas</Text>
                 <Text style={styles.body}>
-                  Tienes {accounts.filter((a) => !a.archived).length} cuentas preparadas (bancos,
-                  tarjetas, efectivo). Revísalas en la pestaña Cuentas antes de empezar.
+                  {activeCount > 0
+                    ? `Tienes ${activeCount} cuentas. Ajústalas (cupo, corte, préstamo) en Cuentas.`
+                    : 'Crea Efectivo y Bancolombia de ejemplo o importa tu CSV de NEKO.'}
                 </Text>
+                {activeCount === 0 ? (
+                  <Pressable style={styles.secondary} onPress={() => void addStarterAccounts()}>
+                    <Text style={styles.secondaryText}>Crear Efectivo + Bancolombia</Text>
+                  </Pressable>
+                ) : null}
+                <Pressable style={styles.secondary} onPress={() => goMas('Cuentas')}>
+                  <Text style={styles.secondaryText}>Abrir Cuentas</Text>
+                </Pressable>
               </>
             ) : null}
             {step === 2 ? (
               <>
-                <Text style={styles.title}>Empieza</Text>
+                <Text style={styles.title}>Movimientos</Text>
                 <Text style={styles.body}>
                   {transactionCount > 0
-                    ? 'Ya hay movimientos cargados. Explora Inicio, Historial y Calendario.'
-                    : 'Configura cuentas, añade tu quincena en Plan y registra tu primer gasto.'}
+                    ? `${transactionCount} movimientos cargados. Usa Inicio y Buscar.`
+                    : 'Importa CSV o registra tu primer gasto en Registrar.'}
                 </Text>
+                <Pressable style={styles.secondary} onPress={() => goMas('Importar')}>
+                  <Text style={styles.secondaryText}>Importar CSV NEKO</Text>
+                </Pressable>
+                <Pressable style={styles.secondary} onPress={() => goMas('Buscar')}>
+                  <Text style={styles.secondaryText}>Buscar en toda la app</Text>
+                </Pressable>
               </>
             ) : null}
 
@@ -114,6 +143,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   primaryText: { color: colors.white, fontWeight: '800', fontSize: 16 },
+  secondary: {
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: tokens.radius.md,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  secondaryText: { color: colors.accent, fontWeight: '700' },
   skip: { alignItems: 'center', paddingVertical: 8 },
   skipText: { color: colors.textMuted, fontWeight: '600' },
 });
