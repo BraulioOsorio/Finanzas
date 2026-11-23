@@ -5,6 +5,9 @@ export type TransactionType = 'income' | 'expense';
 
 export type TransactionSource = 'manual' | 'neko';
 
+/** Icono en listas de movimientos y plan */
+export type IconDisplayMode = 'category' | 'description' | 'account';
+
 export type Transaction = {
   id: string;
   kind: TransactionKind;

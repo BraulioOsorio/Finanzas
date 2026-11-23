@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { PreferencesProvider } from './src/context/PreferencesContext';
 import { TransactionsProvider } from './src/context/TransactionsContext';
 import { AccountsScreen } from './src/screens/AccountsScreen';
 import { CalendarScreen } from './src/screens/CalendarScreen';
@@ -12,6 +13,7 @@ import { HistoryScreen } from './src/screens/HistoryScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { ImportScreen } from './src/screens/ImportScreen';
 import { PlanScreen } from './src/screens/PlanScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
 import { colors } from './src/theme';
 
 const Tab = createBottomTabNavigator();
@@ -39,8 +41,9 @@ function TabLabel({ label, focused }: { label: string; focused: boolean }) {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <TransactionsProvider>
-        <NavigationContainer theme={navTheme}>
+      <PreferencesProvider>
+        <TransactionsProvider>
+          <NavigationContainer theme={navTheme}>
           <StatusBar style="light" />
           <Tab.Navigator
             screenOptions={{
@@ -103,9 +106,17 @@ export default function App() {
                 tabBarLabel: ({ focused }) => <TabLabel label="Importar" focused={focused} />,
               }}
             />
+            <Tab.Screen
+              name="Ajustes"
+              component={SettingsScreen}
+              options={{
+                tabBarLabel: ({ focused }) => <TabLabel label="Ajustes" focused={focused} />,
+              }}
+            />
           </Tab.Navigator>
-        </NavigationContainer>
-      </TransactionsProvider>
+          </NavigationContainer>
+        </TransactionsProvider>
+      </PreferencesProvider>
     </SafeAreaProvider>
   );
 }

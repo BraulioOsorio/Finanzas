@@ -1,10 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BrandIcon } from './BrandIcon';
-import {
-  categoryDisplayLabel,
-  resolveCategoryIconForTransaction,
-} from '../domain/categories/resolveCategoryIcon';
+import { categoryDisplayLabel } from '../domain/categories/resolveCategoryIcon';
+import { resolveDisplayIconForTransaction } from '../domain/icons/resolveDisplayIcon';
+import { usePreferences } from '../context/PreferencesContext';
 import { colors } from '../theme';
 import type { Transaction } from '../types';
 import { formatCurrency, formatShortDate } from '../utils/format';
@@ -15,12 +14,13 @@ type Props = {
 };
 
 export function TransactionRow({ item, onDelete }: Props) {
+  const { iconDisplayMode } = usePreferences();
   const isTransfer = item.kind === 'transfer';
   const isIncome = item.kind === 'income';
   const sign = isTransfer ? (item.signedAmount >= 0 ? '+' : '−') : isIncome ? '+' : '−';
   const displayAmount = isTransfer ? Math.abs(item.signedAmount) : item.amount;
 
-  const brand = resolveCategoryIconForTransaction(item);
+  const brand = resolveDisplayIconForTransaction(item, iconDisplayMode);
   const title = item.description?.trim() || categoryDisplayLabel(item.categoryGroup, item.category, item.nekoType);
   const categoryLine = categoryDisplayLabel(item.categoryGroup, item.category, item.nekoType);
   const metaExtra = item.notes?.trim()

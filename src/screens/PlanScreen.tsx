@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -13,7 +13,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandIcon } from '../components/BrandIcon';
-import { resolveCategoryIconForScheduled } from '../domain/categories/resolveCategoryIcon';
+import { resolveDisplayIconForScheduled } from '../domain/icons/resolveDisplayIcon';
+import { usePreferences } from '../context/PreferencesContext';
+import { categoryDisplayLabel } from '../domain/categories/resolveCategoryIcon';
+import {
+  allCategoryGroups,
+  categoriesForGroup,
+  UNCATEGORIZED_GROUP,
+} from '../domain/nekoCatalog';
 import { scheduleFrequencyLabel } from '../domain/scheduleProjection';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
@@ -23,6 +30,7 @@ import { formatCurrency } from '../utils/format';
 const FREQUENCIES: ScheduleFrequency[] = ['monthly', 'biweekly', 'weekly', 'once'];
 
 export function PlanScreen() {
+  const { iconDisplayMode } = usePreferences();
   const {
     scheduledPayments,
     addScheduledPayment,
@@ -38,7 +46,11 @@ export function PlanScreen() {
   const [account, setAccount] = useState(accountNames[0] ?? 'Bancolombia');
   const [frequency, setFrequency] = useState<ScheduleFrequency>('monthly');
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [categoryGroup, setCategoryGroup] = useState('Hogar y Servicios');
+  const [category, setCategory] = useState('Suscripciones');
   const [saving, setSaving] = useState(false);
+
+  const planCategories = useMemo(() => categoriesForGroup(categoryGroup), [categoryGroup]);
 
   const onSave = async () => {
     const parsed = Number(amount.replace(/[^\d]/g, ''));
@@ -63,8 +75,8 @@ export function PlanScreen() {
         amount: parsed,
         account,
         nekoType: kind === 'income' ? 'Ingreso' : 'Pago',
-        categoryGroup: kind === 'income' ? 'Ingreso Principal' : 'Hogar y Servicios',
-        category: kind === 'income' ? 'Salario' : 'Suscripciones',
+        categoryGroup,
+        category: category || (kind === 'income' ? 'Salario' : 'Suscripciones'),
         frequency,
         startDate,
         active: true,
@@ -116,17 +128,65 @@ export function PlanScreen() {
           <View style={styles.kindRow}>
             <Pressable
               style={[styles.kindChip, kind === 'income' && styles.kindIncome]}
-              onPress={() => setKind('income')}
+              onPress={() => {
+                setKind('income');
+                setCategoryGroup('Ingreso Principal');
+                setCategory('Salario');
+              }}
             >
               <Text style={styles.kindText}>Ingreso</Text>
             </Pressable>
             <Pressable
               style={[styles.kindChip, kind === 'expense' && styles.kindExpense]}
-              onPress={() => setKind('expense')}
+              onPress={() => {
+                setKind('expense');
+                setCategoryGroup('Hogar y Servicios');
+                setCategory('Suscripciones');
+              }}
             >
               <Text style={styles.kindText}>Pago / gasto</Text>
             </Pressable>
           </View>
+
+          <Text style={styles.label}>Grupo de categoría</Text>
+          <View style={styles.chipWrap}>
+            {allCategoryGroups()
+              .filter((g) => g !== UNCATEGORIZED_GROUP)
+              .map((group) => (
+                <Pressable
+                  key={group}
+                  style={[styles.chip, categoryGroup === group && styles.chipActive]}
+                  onPress={() => {
+                    setCategoryGroup(group);
+                    const cats = categoriesForGroup(group);
+                    setCategory(cats[0] ?? '');
+                  }}
+                >
+                  <Text style={[styles.chipText, categoryGroup === group && styles.chipTextActive]}>
+                    {group}
+                  </Text>
+                </Pressable>
+              ))}
+          </View>
+
+          {planCategories.length > 0 ? (
+            <>
+              <Text style={styles.label}>Categoría</Text>
+              <View style={styles.chipWrap}>
+                {planCategories.map((cat) => (
+                  <Pressable
+                    key={cat}
+                    style={[styles.chip, category === cat && styles.chipActive]}
+                    onPress={() => setCategory(cat)}
+                  >
+                    <Text style={[styles.chipText, category === cat && styles.chipTextActive]}>
+                      {cat}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          ) : null}
 
           <Text style={styles.label}>Monto (COP)</Text>
           <TextInput
@@ -200,13 +260,14 @@ export function PlanScreen() {
           </View>
         }
         renderItem={({ item }) => {
-          const brand = resolveCategoryIconForScheduled(item);
+          const brand = resolveDisplayIconForScheduled(item, iconDisplayMode);
           return (
           <View style={styles.row}>
             <BrandIcon brand={brand} size={42} />
             <View style={styles.rowMain}>
               <Text style={styles.rowTitle}>{item.title}</Text>
               <Text style={styles.rowMeta}>
+                {categoryDisplayLabel(item.categoryGroup, item.category)} ·{' '}
                 {scheduleFrequencyLabel(item.frequency)} · {item.account} · desde {item.startDate}
               </Text>
               <Text

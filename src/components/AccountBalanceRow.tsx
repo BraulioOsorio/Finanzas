@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { BrandIcon } from './BrandIcon';
-import { resolveBrandFromText } from '../domain/brands/resolveBrand';
+import { resolveBrandForAccount } from '../domain/brands/resolveBrand';
 import type { AccountBalance } from '../domain/summaries';
 import { colors } from '../theme';
 import { formatCurrency } from '../utils/format';
@@ -12,7 +12,7 @@ type Props = {
 
 export function AccountBalanceRow({ item }: Props) {
   const positive = item.balance >= 0;
-  const brand = resolveBrandFromText(item.account);
+  const brand = resolveBrandForAccount(item.account);
   return (
     <View style={styles.row}>
       <BrandIcon brand={brand} size={42} />

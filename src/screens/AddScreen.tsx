@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -18,13 +19,16 @@ import {
   allCategoryGroups,
   categoriesForGroup,
 } from '../domain/nekoCatalog';
+import { scheduleFrequencyLabel } from '../domain/scheduleProjection';
 import { classifyNekoType } from '../import/nekoMapping';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
-import type { TransactionKind } from '../types';
+import type { ScheduleFrequency, TransactionKind } from '../types';
+
+const RECURRENCE_FREQUENCIES: ScheduleFrequency[] = ['monthly', 'biweekly', 'weekly', 'once'];
 
 export function AddScreen() {
-  const { addTransaction, accountNames } = useTransactions();
+  const { addTransaction, addScheduledPayment, accountNames } = useTransactions();
   const [nekoType, setNekoType] = useState<string>('Gasto');
   const [account, setAccount] = useState(accountNames[0] ?? 'Efectivo');
   const [categoryGroup, setCategoryGroup] = useState('Comida y Bebida');
@@ -33,6 +37,9 @@ export function AddScreen() {
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [repeatEnabled, setRepeatEnabled] = useState(false);
+  const [repeatFrequency, setRepeatFrequency] = useState<ScheduleFrequency>('monthly');
+  const [repeatStartDate, setRepeatStartDate] = useState(new Date().toISOString().slice(0, 10));
 
   const kind: TransactionKind = classifyNekoType(nekoType);
   const categories = useMemo(() => categoriesForGroup(categoryGroup), [categoryGroup]);
@@ -65,6 +72,11 @@ export function AddScreen() {
       return;
     }
 
+    if (repeatEnabled && kind !== 'transfer' && !/^\d{4}-\d{2}-\d{2}$/.test(repeatStartDate)) {
+      Alert.alert('Recurrencia', 'Fecha de inicio inválida (AAAA-MM-DD).');
+      return;
+    }
+
     const signed =
       kind === 'income' ? parsed : kind === 'transfer' ? -parsed : -parsed;
     const type = kind === 'income' ? 'income' : 'expense';
@@ -72,6 +84,9 @@ export function AddScreen() {
 
     setSaving(true);
     try {
+      const group = categoryGroup === UNCATEGORIZED_GROUP ? '' : categoryGroup;
+      const cat = category || nekoType;
+
       await addTransaction({
         kind,
         type,
@@ -81,15 +96,38 @@ export function AddScreen() {
         nekoType,
         description: description.trim(),
         account,
-        categoryGroup: categoryGroup === UNCATEGORIZED_GROUP ? '' : categoryGroup,
-        category: category || nekoType,
+        categoryGroup: group,
+        category: cat,
         notes: notes.trim(),
         source: 'manual',
       });
+
+      if (repeatEnabled && kind !== 'transfer') {
+        const scheduleKind = kind === 'income' ? 'income' : 'expense';
+        await addScheduledPayment({
+          title: description.trim() || cat,
+          kind: scheduleKind,
+          amount: parsed,
+          account,
+          nekoType,
+          categoryGroup: group,
+          category: cat,
+          frequency: repeatFrequency,
+          startDate: repeatStartDate,
+          active: true,
+        });
+      }
+
       setAmount('');
       setDescription('');
       setNotes('');
-      Alert.alert('Guardado', 'Movimiento registrado al estilo Neko.');
+      setRepeatEnabled(false);
+      Alert.alert(
+        'Guardado',
+        repeatEnabled && kind !== 'transfer'
+          ? 'Movimiento guardado y añadido al Plan recurrente (calendario futuro).'
+          : 'Movimiento registrado al estilo Neko.',
+      );
     } finally {
       setSaving(false);
     }
@@ -219,6 +257,54 @@ export function AddScreen() {
             onChangeText={setDescription}
           />
 
+          {kind !== 'transfer' ? (
+            <View style={styles.repeatBlock}>
+              <View style={styles.repeatRow}>
+                <View style={styles.repeatTextCol}>
+                  <Text style={styles.repeatTitle}>Repetir (plan recurrente)</Text>
+                  <Text style={styles.repeatHint}>
+                    Como quincena o Netflix: aparece en Plan y proyecta el calendario.
+                  </Text>
+                </View>
+                <Switch value={repeatEnabled} onValueChange={setRepeatEnabled} />
+              </View>
+              {repeatEnabled ? (
+                <>
+                  <Text style={styles.label}>Frecuencia</Text>
+                  <View style={styles.chipWrap}>
+                    {RECURRENCE_FREQUENCIES.map((freq) => (
+                      <Pressable
+                        key={freq}
+                        style={[
+                          styles.categoryChip,
+                          repeatFrequency === freq && styles.categoryChipActive,
+                        ]}
+                        onPress={() => setRepeatFrequency(freq)}
+                      >
+                        <Text
+                          style={[
+                            styles.categoryChipText,
+                            repeatFrequency === freq && styles.categoryChipTextActive,
+                          ]}
+                        >
+                          {scheduleFrequencyLabel(freq)}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <Text style={styles.label}>Próxima fecha (AAAA-MM-DD)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={repeatStartDate}
+                    onChangeText={setRepeatStartDate}
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="none"
+                  />
+                </>
+              ) : null}
+            </View>
+          ) : null}
+
           <Text style={styles.label}>Notas (opcional)</Text>
           <TextInput
             style={[styles.input, styles.inputMultiline]}
@@ -272,6 +358,19 @@ const styles = StyleSheet.create({
   categoryChipText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   categoryChipTextActive: { color: colors.white },
   transferNote: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
+  repeatBlock: {
+    marginTop: 4,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 10,
+  },
+  repeatRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  repeatTextCol: { flex: 1, gap: 4 },
+  repeatTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  repeatHint: { color: colors.textMuted, fontSize: 12, lineHeight: 16 },
   submit: {
     marginTop: 12,
     backgroundColor: colors.accent,

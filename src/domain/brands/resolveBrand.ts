@@ -54,6 +54,20 @@ function normalizeAccountKey(account: string): string {
   return normalize(account);
 }
 
+/** Icono de banco / cuenta (RappiCard, Bancolombia, Nu…). */
+export function resolveBrandForAccount(account: string): BrandDef {
+  const accountKey = normalizeAccountKey(account);
+  const hintedId = ACCOUNT_BRAND_HINTS[accountKey];
+  if (hintedId) {
+    const hinted = BRANDS.find((b) => b.id === hintedId);
+    if (hinted) {
+      return hinted;
+    }
+  }
+  const fromAccount = resolveBrandFromText(account);
+  return fromAccount.id !== 'generic' ? fromAccount : DEFAULT_BRAND;
+}
+
 export function resolveBrandForTransaction(t: Transaction): BrandDef {
   const merchant = resolveBrandFromText(
     t.description,
@@ -66,17 +80,7 @@ export function resolveBrandForTransaction(t: Transaction): BrandDef {
     return merchant;
   }
 
-  const accountKey = normalizeAccountKey(t.account);
-  const hintedId = ACCOUNT_BRAND_HINTS[accountKey];
-  if (hintedId) {
-    const hinted = BRANDS.find((b) => b.id === hintedId);
-    if (hinted) {
-      return hinted;
-    }
-  }
-
-  const fromAccount = resolveBrandFromText(t.account);
-  return fromAccount.id !== 'generic' ? fromAccount : DEFAULT_BRAND;
+  return resolveBrandForAccount(t.account);
 }
 
 export function resolveBrandForScheduled(p: ScheduledPayment): BrandDef {
@@ -84,14 +88,5 @@ export function resolveBrandForScheduled(p: ScheduledPayment): BrandDef {
   if (fromTitle.id !== 'generic') {
     return fromTitle;
   }
-  const accountKey = normalizeAccountKey(p.account);
-  const hintedId = ACCOUNT_BRAND_HINTS[accountKey];
-  if (hintedId) {
-    const hinted = BRANDS.find((b) => b.id === hintedId);
-    if (hinted) {
-      return hinted;
-    }
-  }
-  const fromAccount = resolveBrandFromText(p.account);
-  return fromAccount.id !== 'generic' ? fromAccount : DEFAULT_BRAND;
+  return resolveBrandForAccount(p.account);
 }
