@@ -52,6 +52,13 @@ export function SettingsScreen() {
         </Pressable>
 
         <View style={styles.card}>
+          <Text style={styles.cardTitle}>Categorías y cuentas</Text>
+          <Text style={styles.cardBody}>
+            Gestiona grupos Neko en la pestaña Categorías y bancos o tarjetas en Cuentas.
+          </Text>
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.cardTitle}>Pagos recurrentes</Text>
           <Text style={styles.cardBody}>
             En Registrar puedes marcar «Repetir» al guardar (quincena, suscripciones, arriendo). También

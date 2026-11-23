@@ -6,10 +6,12 @@ const KEY = '@finanzas/preferences_v1';
 
 export type StoredPreferences = {
   iconDisplayMode: IconDisplayMode;
+  onboardingComplete: boolean;
 };
 
 const DEFAULTS: StoredPreferences = {
   iconDisplayMode: 'category',
+  onboardingComplete: false,
 };
 
 export async function loadPreferences(): Promise<StoredPreferences> {
@@ -20,10 +22,12 @@ export async function loadPreferences(): Promise<StoredPreferences> {
     }
     const parsed = JSON.parse(raw) as Partial<StoredPreferences>;
     const mode = parsed.iconDisplayMode;
-    if (mode === 'category' || mode === 'description' || mode === 'account') {
-      return { iconDisplayMode: mode };
-    }
-    return { ...DEFAULTS };
+    const iconDisplayMode =
+      mode === 'category' || mode === 'description' || mode === 'account' ? mode : DEFAULTS.iconDisplayMode;
+    return {
+      iconDisplayMode,
+      onboardingComplete: Boolean(parsed.onboardingComplete),
+    };
   } catch {
     return { ...DEFAULTS };
   }

@@ -55,7 +55,13 @@ npx tsx scripts/verify-neko-import.ts samples/neko_transactions_20261122_8537.cs
 
 ## Publicar en tiendas
 
-Más adelante se puede usar [EAS Build](https://docs.expo.dev/build/introduction/) para generar APK/AAB y el binario de iOS.
+APK interno con EAS (requiere cuenta Expo):
+
+```bash
+npx eas-cli build --platform android --profile preview
+```
+
+Perfiles en `eas.json`.
 
 ## Repositorio en GitHub
 

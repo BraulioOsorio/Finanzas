@@ -12,12 +12,8 @@ import {
   View,
 } from 'react-native';
 
-import {
-  NEKO_TRANSACTION_TYPES,
-  UNCATEGORIZED_GROUP,
-  allCategoryGroups,
-  categoriesForGroup,
-} from '../domain/nekoCatalog';
+import { NEKO_TRANSACTION_TYPES } from '../domain/nekoCatalog';
+import { useNekoCatalog } from '../hooks/useNekoCatalog';
 import { classifyNekoType } from '../import/nekoMapping';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
@@ -31,6 +27,7 @@ type Props = {
 
 export function TransactionEditModal({ visible, transaction, onClose }: Props) {
   const { updateTransaction, accountNames } = useTransactions();
+  const { UNCATEGORIZED_GROUP, categoriesForGroup, allCategoryGroups } = useNekoCatalog();
   const [nekoType, setNekoType] = useState('Gasto');
   const [account, setAccount] = useState('');
   const [categoryGroup, setCategoryGroup] = useState('Comida y Bebida');
@@ -42,7 +39,10 @@ export function TransactionEditModal({ visible, transaction, onClose }: Props) {
   const [saving, setSaving] = useState(false);
 
   const kind = classifyNekoType(nekoType);
-  const categories = useMemo(() => categoriesForGroup(categoryGroup), [categoryGroup]);
+  const categories = useMemo(
+    () => categoriesForGroup(categoryGroup),
+    [categoryGroup, categoriesForGroup],
+  );
 
   useEffect(() => {
     if (!transaction || !visible) {

@@ -16,11 +16,7 @@ import { BrandIcon } from '../components/BrandIcon';
 import { resolveDisplayIconForScheduled } from '../domain/icons/resolveDisplayIcon';
 import { usePreferences } from '../context/PreferencesContext';
 import { categoryDisplayLabel } from '../domain/categories/resolveCategoryIcon';
-import {
-  allCategoryGroups,
-  categoriesForGroup,
-  UNCATEGORIZED_GROUP,
-} from '../domain/nekoCatalog';
+import { useNekoCatalog } from '../hooks/useNekoCatalog';
 import { scheduleFrequencyLabel } from '../domain/scheduleProjection';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
@@ -31,6 +27,7 @@ const FREQUENCIES: ScheduleFrequency[] = ['monthly', 'biweekly', 'weekly', 'once
 
 export function PlanScreen() {
   const { iconDisplayMode } = usePreferences();
+  const { UNCATEGORIZED_GROUP, categoriesForGroup, allCategoryGroups } = useNekoCatalog();
   const {
     scheduledPayments,
     addScheduledPayment,
@@ -50,7 +47,10 @@ export function PlanScreen() {
   const [category, setCategory] = useState('Suscripciones');
   const [saving, setSaving] = useState(false);
 
-  const planCategories = useMemo(() => categoriesForGroup(categoryGroup), [categoryGroup]);
+  const planCategories = useMemo(
+    () => categoriesForGroup(categoryGroup),
+    [categoryGroup, categoriesForGroup],
+  );
 
   const onSave = async () => {
     const parsed = Number(amount.replace(/[^\d]/g, ''));

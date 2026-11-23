@@ -20,6 +20,7 @@ import {
   type MonthFlow,
 } from '../domain/summaries';
 import { loadAccounts, saveAccounts } from '../storage/accounts';
+import { loadCategoryTree, saveCategoryTree, type CategoryTree } from '../storage/categoryTree';
 import { applyImport, parseNekoCsv } from '../import/parseNekoCsv';
 import { loadScheduledPayments, saveScheduledPayments } from '../storage/scheduled';
 import { loadTransactions, saveTransactions } from '../storage/transactions';
@@ -63,6 +64,10 @@ type TransactionsContextValue = {
   accounts: AccountDef[];
   addAccount: (draft: AccountDefDraft) => Promise<void>;
   updateAccount: (id: string, draft: AccountDefDraft) => Promise<void>;
+  categoryTree: CategoryTree;
+  saveCategoryTreeState: (tree: CategoryTree) => Promise<void>;
+  addCategoryGroup: (name: string) => Promise<void>;
+  addCategoryToGroup: (group: string, category: string) => Promise<void>;
   scheduledPayments: ScheduledPayment[];
   addScheduledPayment: (draft: ScheduledPaymentDraft) => Promise<void>;
   removeScheduledPayment: (id: string) => Promise<void>;
@@ -81,21 +86,24 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
   const [accounts, setAccounts] = useState<AccountDef[]>([]);
+  const [categoryTree, setCategoryTreeState] = useState<CategoryTree>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [stored, scheduled, accs] = await Promise.all([
+      const [stored, scheduled, accs, tree] = await Promise.all([
         loadTransactions(),
         loadScheduledPayments(),
         loadAccounts(),
+        loadCategoryTree(),
       ]);
       if (!cancelled) {
         const sorted = sortByDateDesc(stored);
         setTransactions(sorted);
         setScheduledPayments(scheduled);
         setAccounts(accs);
+        setCategoryTreeState(tree);
         setLoading(false);
         // Sincronizar cuentas nuevas del CSV sin bloquear la UI
         const existing = new Set(accs.map((a) => a.name.trim().toLowerCase()));
@@ -281,6 +289,42 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [accounts, persistAccounts],
   );
 
+  const persistCategoryTree = useCallback(async (tree: CategoryTree) => {
+    setCategoryTreeState(tree);
+    await saveCategoryTree(tree);
+  }, []);
+
+  const saveCategoryTreeState = persistCategoryTree;
+
+  const addCategoryGroup = useCallback(
+    async (name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed || categoryTree[trimmed]) {
+        return;
+      }
+      await persistCategoryTree({ ...categoryTree, [trimmed]: [] });
+    },
+    [categoryTree, persistCategoryTree],
+  );
+
+  const addCategoryToGroup = useCallback(
+    async (group: string, category: string) => {
+      const cat = category.trim();
+      if (!cat || !categoryTree[group]) {
+        return;
+      }
+      const list = categoryTree[group];
+      if (list.some((c) => c.toLowerCase() === cat.toLowerCase())) {
+        return;
+      }
+      await persistCategoryTree({
+        ...categoryTree,
+        [group]: [...list, cat],
+      });
+    },
+    [categoryTree, persistCategoryTree],
+  );
+
   const updateAccount = useCallback(
     async (id: string, draft: AccountDefDraft) => {
       await persistAccounts(
@@ -404,6 +448,10 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       accounts,
       addAccount,
       updateAccount,
+      categoryTree,
+      saveCategoryTreeState,
+      addCategoryGroup,
+      addCategoryToGroup,
       scheduledPayments,
       addScheduledPayment,
       removeScheduledPayment,
@@ -429,6 +477,10 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       accounts,
       addAccount,
       updateAccount,
+      categoryTree,
+      saveCategoryTreeState,
+      addCategoryGroup,
+      addCategoryToGroup,
       scheduledPayments,
       addScheduledPayment,
       removeScheduledPayment,

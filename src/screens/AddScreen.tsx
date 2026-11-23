@@ -13,12 +13,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  NEKO_TRANSACTION_TYPES,
-  UNCATEGORIZED_GROUP,
-  allCategoryGroups,
-  categoriesForGroup,
-} from '../domain/nekoCatalog';
+import { NEKO_TRANSACTION_TYPES } from '../domain/nekoCatalog';
+import { CategoryPickChip } from '../components/CategoryPickChip';
+import { useNekoCatalog } from '../hooks/useNekoCatalog';
 import { scheduleFrequencyLabel } from '../domain/scheduleProjection';
 import { classifyNekoType } from '../import/nekoMapping';
 import { useTransactions } from '../context/TransactionsContext';
@@ -29,6 +26,7 @@ const RECURRENCE_FREQUENCIES: ScheduleFrequency[] = ['monthly', 'biweekly', 'wee
 
 export function AddScreen() {
   const { addTransaction, addScheduledPayment, addTransferPair, accountNames } = useTransactions();
+  const { UNCATEGORIZED_GROUP, categoriesForGroup, allCategoryGroups } = useNekoCatalog();
   const [nekoType, setNekoType] = useState<string>('Gasto');
   const [account, setAccount] = useState(accountNames[0] ?? 'Efectivo');
   const [categoryGroup, setCategoryGroup] = useState('Comida y Bebida');
@@ -46,7 +44,10 @@ export function AddScreen() {
   const [transferPair, setTransferPair] = useState(true);
 
   const kind: TransactionKind = classifyNekoType(nekoType);
-  const categories = useMemo(() => categoriesForGroup(categoryGroup), [categoryGroup]);
+  const categories = useMemo(
+    () => categoriesForGroup(categoryGroup),
+    [categoryGroup, categoriesForGroup],
+  );
 
   const onChangeGroup = (group: string) => {
     setCategoryGroup(group);
@@ -219,20 +220,15 @@ export function AddScreen() {
                 {allCategoryGroups()
                   .filter((g) => g !== UNCATEGORIZED_GROUP)
                   .map((group) => (
-                    <Pressable
+                    <CategoryPickChip
                       key={group}
-                      style={[styles.categoryChip, categoryGroup === group && styles.categoryChipActive]}
+                      label={group}
+                      active={categoryGroup === group}
                       onPress={() => onChangeGroup(group)}
-                    >
-                      <Text
-                        style={[
-                          styles.categoryChipText,
-                          categoryGroup === group && styles.categoryChipTextActive,
-                        ]}
-                      >
-                        {group}
-                      </Text>
-                    </Pressable>
+                      categoryGroup={group}
+                      category={categoriesForGroup(group)[0] ?? ''}
+                      kind={kind}
+                    />
                   ))}
               </View>
 
@@ -241,20 +237,15 @@ export function AddScreen() {
                   <Text style={styles.label}>Categoría</Text>
                   <View style={styles.chipWrap}>
                     {categories.map((cat) => (
-                      <Pressable
+                      <CategoryPickChip
                         key={cat}
-                        style={[styles.categoryChip, category === cat && styles.categoryChipActive]}
+                        label={cat}
+                        active={category === cat}
                         onPress={() => setCategory(cat)}
-                      >
-                        <Text
-                          style={[
-                            styles.categoryChipText,
-                            category === cat && styles.categoryChipTextActive,
-                          ]}
-                        >
-                          {cat}
-                        </Text>
-                      </Pressable>
+                        categoryGroup={categoryGroup}
+                        category={cat}
+                        kind={kind}
+                      />
                     ))}
                   </View>
                 </>

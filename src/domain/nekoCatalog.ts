@@ -37,9 +37,9 @@ export const DEFAULT_ACCOUNTS = [
 ] as const;
 
 /**
- * Jerarquía Grupo → Categoría (como en Neko).
+ * Jerarquía Grupo → Categoría (como en Neko). Editable en Ajustes → Categorías.
  */
-export const CATEGORY_TREE: Record<string, readonly string[]> = {
+export const DEFAULT_CATEGORY_TREE: Record<string, readonly string[]> = {
   'Comida y Bebida': ['Salidas'],
   'Estilo de Vida': ['Amor', 'Juegos', 'Educación', 'Yo', 'Regalos'],
   'Hogar y Servicios': ['Suscripciones', 'Casa', 'Servicios'],
@@ -52,14 +52,16 @@ export const CATEGORY_TREE: Record<string, readonly string[]> = {
 
 export const UNCATEGORIZED_GROUP = 'Sin grupo';
 
-export function categoriesForGroup(group: string): string[] {
+export type CategoryTreeMap = Record<string, string[]>;
+
+export function categoriesForGroup(group: string, tree: CategoryTreeMap): string[] {
   if (!group || group === UNCATEGORIZED_GROUP) {
     return [];
   }
-  const list = CATEGORY_TREE[group];
+  const list = tree[group];
   return list ? [...list] : [];
 }
 
-export function allCategoryGroups(): string[] {
-  return [...Object.keys(CATEGORY_TREE), UNCATEGORIZED_GROUP];
+export function allCategoryGroups(tree: CategoryTreeMap): string[] {
+  return [...Object.keys(tree), UNCATEGORIZED_GROUP];
 }

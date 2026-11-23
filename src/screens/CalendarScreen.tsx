@@ -17,6 +17,15 @@ import { formatCurrency, formatShortDate } from '../utils/format';
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <View style={styles.legendItem}>
+      <View style={[styles.legendDot, { backgroundColor: color }]} />
+      <Text style={styles.legendLabel}>{label}</Text>
+    </View>
+  );
+}
+
 export function CalendarScreen() {
   const { transactions, accountNames, scheduledPayments } = useTransactions();
   const [monthKey, setMonthKey] = useState(monthKeyFromDate(new Date()));
@@ -83,6 +92,14 @@ export function CalendarScreen() {
             </Pressable>
           ))}
         </ScrollView>
+
+        <View style={styles.legend}>
+          <LegendDot color={colors.income} label="Ingreso" />
+          <LegendDot color={colors.expense} label="Gasto" />
+          <LegendDot color="#94a3b8" label="Transf." />
+          <LegendDot color={colors.accent} label="Plan" />
+          <Text style={styles.legendItalic}>Cursiva = proyección</Text>
+        </View>
 
         <View style={styles.weekdayRow}>
           {WEEKDAYS.map((w) => (
@@ -232,6 +249,17 @@ const styles = StyleSheet.create({
   accountChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   accountChipText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   accountChipTextActive: { color: colors.white },
+  legend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '600' },
+  legendItalic: { color: colors.textMuted, fontSize: 11, fontStyle: 'italic' },
   weekdayRow: { flexDirection: 'row', marginTop: 8 },
   weekday: {
     flex: 1,

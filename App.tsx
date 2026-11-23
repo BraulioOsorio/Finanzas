@@ -13,7 +13,9 @@ import { HistoryScreen } from './src/screens/HistoryScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { ImportScreen } from './src/screens/ImportScreen';
 import { PlanScreen } from './src/screens/PlanScreen';
+import { CategoriesScreen } from './src/screens/CategoriesScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { OnboardingGate } from './src/components/OnboardingGate';
 import { colors } from './src/theme';
 
 const Tab = createBottomTabNavigator();
@@ -43,6 +45,7 @@ export default function App() {
     <SafeAreaProvider>
       <PreferencesProvider>
         <TransactionsProvider>
+          <OnboardingGate>
           <NavigationContainer theme={navTheme}>
           <StatusBar style="light" />
           <Tab.Navigator
@@ -76,6 +79,13 @@ export default function App() {
               component={PlanScreen}
               options={{
                 tabBarLabel: ({ focused }) => <TabLabel label="Plan" focused={focused} />,
+              }}
+            />
+            <Tab.Screen
+              name="Categorías"
+              component={CategoriesScreen}
+              options={{
+                tabBarLabel: ({ focused }) => <TabLabel label="Categorías" focused={focused} />,
               }}
             />
             <Tab.Screen
@@ -115,6 +125,7 @@ export default function App() {
             />
           </Tab.Navigator>
           </NavigationContainer>
+          </OnboardingGate>
         </TransactionsProvider>
       </PreferencesProvider>
     </SafeAreaProvider>

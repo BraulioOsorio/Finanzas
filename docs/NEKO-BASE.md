@@ -22,6 +22,9 @@ NEKO ([nekomoney.app](https://www.nekomoney.app/es)) es una app **cerrada** (iOS
 | Transferencias no son “gasto” | `kind: transfer` excluido del flujo ingreso/gasto |
 | Varios saldos | Pestaña Cuentas |
 | Alta de cuentas (banco, efectivo, crédito, préstamo…) | Cuentas → «Nueva cuenta»; «Disponible para gastar» por cuenta |
+| Editar árbol de categorías | Pestaña Categorías |
+| Onboarding inicial | Primera apertura (omitir o 3 pasos) |
+| Tokens visuales propios | `src/tokens.ts` (paleta Finanzas) |
 | Editar movimiento | Historial → tocar fila o «Editar» |
 | Filtros historial | Buscar, mes, cuenta, grupo |
 | Transferencia en pareja | Registrar → Transferencia |
@@ -39,4 +42,4 @@ Esos módulos se pueden planificar después sobre esta base de datos local.
 
 ## Fuente del catálogo
 
-Las cuentas iniciales salen de tu CSV; puedes editar tipo y si son líquidas en **Cuentas**. Las categorías siguen en `CATEGORY_TREE` (pantalla de categorías pendiente).
+Cuentas y categorías persisten en AsyncStorage; el seed sale de tu CSV Neko.
