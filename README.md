@@ -52,6 +52,9 @@ El modelo de datos y pantallas siguen la lógica de **[NEKO: Control de Gastos](
 - **Historial**: botón **Plan** en compras a meses para crear cuotas sin pasar por Importar
 - **Informe**: chips de mes para flujo, categorías y presupuesto (patrimonio sigue siendo «hoy»)
 - **Préstamos**: día de abono en Cuentas + aviso en Inicio y notificación local (Ajustes)
+- **Tarjeta sin intereses**: monto del extracto en Inicio/Próximos (no solo mínimo)
+- **Presupuesto**: incluye gastos del Plan/cuotas que coincidan en categoría
+- **Widget (EAS)**: snapshot + vista previa en Ajustes; APK con `eas build` (ver `docs/WIDGETS.md`)
 - Campos guardados: fecha, tipo, descripción, cuenta, grupo/categoría, notas
 - Las transferencias y pagos de tarjeta se listan pero **no mueven el saldo** (como en un libro mayor)
 - **Iconos configurables** en Ajustes: categoría Neko (default), comercio por descripción, o banco/cuenta; pestaña Cuentas siempre muestra el banco

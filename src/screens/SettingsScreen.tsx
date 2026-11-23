@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { WidgetPreviewCard } from '../components/WidgetPreviewCard';
 import { IconModePreview } from '../components/IconModePreview';
 import { IconModeSelector } from '../components/IconModeSelector';
 import { usePreferences } from '../context/PreferencesContext';
@@ -78,6 +79,16 @@ export function SettingsScreen() {
               onValueChange={(v) => void setCreditRemindersEnabled(v)}
             />
           </View>
+        </View>
+
+        <WidgetPreviewCard />
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Presupuesto y Plan</Text>
+          <Text style={styles.cardBody}>
+            Los límites en Categorías cuentan gastos reales más pagos del Plan y cuotas que coincidan en
+            grupo/categoría (estilo NEKO).
+          </Text>
         </View>
 
         <View style={styles.card}>

@@ -1,16 +1,33 @@
+import { installmentsInRange, resolveInstallmentAccount } from './installments';
+import { occurrencesInRange } from './scheduleProjection';
+import { daysInMonth } from './calendar';
 import { currentMonthKey } from './summaries';
-import type { CategoryBudget, Transaction } from '../types';
+import type { AccountDef, CategoryBudget, InstallmentPlan, ScheduledPayment, Transaction } from '../types';
 
 export type BudgetProgress = {
   budget: CategoryBudget;
   label: string;
   spent: number;
+  plannedSpend: number;
+  effectiveSpent: number;
   limit: number;
   ratio: number;
   monthKey: string;
 };
 
-function matchesBudget(t: Transaction, b: CategoryBudget, monthKey: string): boolean {
+export type BudgetProgressOptions = {
+  includePlanned?: boolean;
+  scheduled?: ScheduledPayment[];
+  installmentPlans?: InstallmentPlan[];
+  accounts?: AccountDef[];
+};
+
+function monthEnd(monthKey: string): string {
+  const d = daysInMonth(monthKey);
+  return `${monthKey}-${String(d).padStart(2, '0')}`;
+}
+
+function matchesBudgetTransaction(t: Transaction, b: CategoryBudget, monthKey: string): boolean {
   if (t.kind !== 'expense' || !t.postedDate.startsWith(monthKey)) {
     return false;
   }
@@ -24,17 +41,78 @@ function matchesBudget(t: Transaction, b: CategoryBudget, monthKey: string): boo
   return true;
 }
 
+function matchesBudgetCategory(
+  group: string,
+  category: string,
+  b: CategoryBudget,
+): boolean {
+  if (group.trim() !== b.categoryGroup.trim()) {
+    return false;
+  }
+  if (b.category.trim()) {
+    return category.trim() === b.category.trim();
+  }
+  return true;
+}
+
+function plannedForBudget(
+  budget: CategoryBudget,
+  monthKey: string,
+  scheduled: ScheduledPayment[],
+  installmentPlans: InstallmentPlan[],
+  accounts: AccountDef[],
+): number {
+  const start = `${monthKey}-01`;
+  const end = monthEnd(monthKey);
+  let sum = 0;
+
+  for (const s of scheduled) {
+    if (!s.active || s.kind !== 'expense') {
+      continue;
+    }
+    if (!matchesBudgetCategory(s.categoryGroup, s.category, budget)) {
+      continue;
+    }
+    const dates = occurrencesInRange(s, start, end);
+    sum += dates.length * s.amount;
+  }
+
+  for (const plan of installmentPlans) {
+    if (!plan.active) {
+      continue;
+    }
+    if (!matchesBudgetCategory(plan.categoryGroup, plan.category, budget)) {
+      continue;
+    }
+    const acc = resolveInstallmentAccount(plan, accounts);
+    const hits = installmentsInRange(plan, start, end, acc);
+    sum += hits.length * plan.perInstallment;
+  }
+
+  return sum;
+}
+
 export function budgetProgressForMonth(
   budgets: CategoryBudget[],
   transactions: Transaction[],
   monthKey = currentMonthKey(),
+  options: BudgetProgressOptions = {},
 ): BudgetProgress[] {
+  const includePlanned = options.includePlanned !== false;
+  const scheduled = options.scheduled ?? [];
+  const installmentPlans = options.installmentPlans ?? [];
+  const accounts = options.accounts ?? [];
+
   return budgets
     .filter((b) => b.active && b.monthlyLimit > 0)
     .map((budget) => {
       const spent = transactions
-        .filter((t) => matchesBudget(t, budget, monthKey))
+        .filter((t) => matchesBudgetTransaction(t, budget, monthKey))
         .reduce((sum, t) => sum + t.amount, 0);
+      const plannedSpend = includePlanned
+        ? plannedForBudget(budget, monthKey, scheduled, installmentPlans, accounts)
+        : 0;
+      const effectiveSpent = spent + plannedSpend;
       const label = budget.category.trim()
         ? `${budget.categoryGroup} › ${budget.category}`
         : budget.categoryGroup;
@@ -42,8 +120,10 @@ export function budgetProgressForMonth(
         budget,
         label,
         spent,
+        plannedSpend,
+        effectiveSpent,
         limit: budget.monthlyLimit,
-        ratio: budget.monthlyLimit > 0 ? spent / budget.monthlyLimit : 0,
+        ratio: budget.monthlyLimit > 0 ? effectiveSpent / budget.monthlyLimit : 0,
         monthKey,
       };
     })

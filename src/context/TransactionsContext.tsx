@@ -571,7 +571,12 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     const monthKey = currentMonthKey();
   const creditSummary = creditCardSummaries(accounts, balances, transactions, installmentPlans);
     const debtSummary = debtBucketSummaries(accounts, balances, transactions, monthKey);
-    const budgetProg = budgetProgressForMonth(budgets, transactions, monthKey);
+    const budgetProg = budgetProgressForMonth(budgets, transactions, monthKey, {
+      includePlanned: true,
+      scheduled: scheduledPayments,
+      installmentPlans,
+      accounts,
+    });
     return {
       totalIncome: income,
       totalExpense: expense,
@@ -586,7 +591,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       debtSummary,
       budgetProg,
     };
-  }, [transactions, accounts, budgets, installmentPlans]);
+  }, [transactions, accounts, budgets, installmentPlans, scheduledPayments]);
 
   const value = useMemo(
     () => ({

@@ -1,11 +1,21 @@
-# Widgets (pendiente — requiere build nativo)
+# Widgets (EAS)
 
-NEKO ofrece widget de **Disponible para gastar** y **registro rápido** en pantalla de inicio/bloqueo + Siri.
+## Qué hay hoy
 
-En Finanzas (Expo):
+- **En app**: `WidgetSnapshotSync` actualiza disponible + tarjetas «sin intereses».
+- **Ajustes**: vista previa del widget.
+- **Archivo**: `cache/widget-snapshot.json` (misma caché que usa la app con `expo-file-system`).
+- **Plugin**: `plugins/withFinanzasWidget.js` (meta-data Android tras `prebuild`).
 
-1. Ya calculamos `computeSafeToSpend` y `liquidAvailable` en la app.
-2. Un widget necesita **development build** (`expo prebuild` + módulo nativo) o config Android `AppWidget` / iOS WidgetKit fuera de Expo Go.
-3. Recomendación: tras fijar el motor v2 en Inicio, exponer los mismos valores vía **App Group** / `SharedPreferences` desde un módulo nativo fino.
+## Build con widget nativo (siguiente paso manual)
 
-No implementado en v1 para no bloquear el resto del roadmap NEKO.
+```bash
+npm install
+npx expo prebuild --platform android
+# Añadir SafeToSpendWidgetProvider en android/ (ver widgets/android/README.md)
+npx eas-cli build --platform android --profile preview
+```
+
+Perfil **development** en `eas.json` para `expo-dev-client` si enlazáis módulos custom.
+
+Expo Go **no** muestra widgets de inicio; hace falta APK/AAB.

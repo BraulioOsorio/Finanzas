@@ -20,6 +20,8 @@ export type CardStatementOutlook = {
   cardPaymentsInPeriod: number;
   estimatedStatement: number;
   estimatedMinimum: number;
+  /** Pagar el extracto completo antes del vencimiento (evitar interés rotativo nuevo). */
+  payInFullToZeroInterest: number;
   estimatedInterestIfUnpaid: number;
   daysToDue?: number;
 };
@@ -139,6 +141,7 @@ export function cardStatementOutlook(
     cardPaymentsInPeriod: payments,
     estimatedStatement,
     estimatedMinimum,
+    payInFullToZeroInterest: estimatedStatement,
     estimatedInterestIfUnpaid,
     daysToDue,
   };

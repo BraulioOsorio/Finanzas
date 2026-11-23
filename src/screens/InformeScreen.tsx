@@ -41,6 +41,8 @@ export function InformeScreen() {
     transactions,
     accounts,
     budgets,
+    scheduledPayments,
+    installmentPlans,
   } = useTransactions();
 
   const [monthKey, setMonthKey] = useState(monthFlow.monthKey || currentMonthKey());
@@ -66,8 +68,22 @@ export function InformeScreen() {
     () =>
       monthKey === monthFlow.monthKey
         ? budgetProgress
-        : budgetProgressForMonth(budgets, transactions, monthKey),
-    [monthKey, monthFlow.monthKey, budgetProgress, budgets, transactions],
+        : budgetProgressForMonth(budgets, transactions, monthKey, {
+            includePlanned: true,
+            scheduled: scheduledPayments,
+            installmentPlans,
+            accounts,
+          }),
+    [
+      monthKey,
+      monthFlow.monthKey,
+      budgetProgress,
+      budgets,
+      transactions,
+      scheduledPayments,
+      installmentPlans,
+      accounts,
+    ],
   );
 
   const net = useMemo(

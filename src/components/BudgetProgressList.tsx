@@ -30,9 +30,14 @@ export function BudgetProgressList({ items, monthKey }: Props) {
                 {p.label}
               </Text>
               <Text style={[styles.amount, over && styles.amountOver]}>
-                {formatCurrency(p.spent)} / {formatCurrency(p.limit)}
+                {formatCurrency(p.effectiveSpent)} / {formatCurrency(p.limit)}
               </Text>
             </View>
+            {p.plannedSpend > 0 ? (
+              <Text style={styles.planned}>
+                Real {formatCurrency(p.spent)} + plan {formatCurrency(p.plannedSpend)}
+              </Text>
+            ) : null}
             <View style={styles.track}>
               <View
                 style={[
@@ -54,6 +59,7 @@ const styles = StyleSheet.create({
   wrap: { gap: 10, marginTop: 4 },
   title: { color: colors.text, fontSize: 14, fontWeight: '700' },
   row: { gap: 6 },
+  planned: { color: colors.textMuted, fontSize: 11 },
   rowHead: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   label: { color: colors.textMuted, fontSize: 13, fontWeight: '600', flex: 1 },
   amount: { color: colors.text, fontSize: 12, fontWeight: '700' },

@@ -36,10 +36,16 @@ export function CreditCardSummaryList({ cards }: Props) {
                 {formatCurrency(c.outlook.estimatedStatement)}
               </Text>
               {c.outlook.nextDue ? (
-                <Text style={styles.outlookLine}>
-                  Pagar antes del {formatShortDate(c.outlook.nextDue)} · mínimo orientativo{' '}
-                  {formatCurrency(c.outlook.estimatedMinimum)}
-                </Text>
+                <>
+                  <Text style={[styles.outlookLine, styles.payFull]}>
+                    Sin intereses (paga extracto): ~{formatCurrency(c.outlook.payInFullToZeroInterest)}{' '}
+                    antes del {formatShortDate(c.outlook.nextDue)}
+                  </Text>
+                  <Text style={styles.outlookLine}>
+                    Mínimo orientativo: {formatCurrency(c.outlook.estimatedMinimum)} · deuda total{' '}
+                    {formatCurrency(c.owed)}
+                  </Text>
+                </>
               ) : null}
               {c.outlook.estimatedInterestIfUnpaid > 0 ? (
                 <Text style={styles.interest}>
@@ -83,6 +89,7 @@ const styles = StyleSheet.create({
   meta: { color: colors.textMuted, fontSize: 12 },
   outlook: { marginTop: 6, gap: 4 },
   outlookLine: { color: colors.text, fontSize: 12, lineHeight: 17 },
+  payFull: { color: colors.income, fontWeight: '700' },
   interest: { color: colors.expense, fontSize: 11, fontStyle: 'italic' },
   hint: { color: colors.textMuted, fontSize: 11, fontStyle: 'italic' },
 });

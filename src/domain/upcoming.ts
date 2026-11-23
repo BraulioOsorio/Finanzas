@@ -87,22 +87,22 @@ export function buildUpcoming(
     }
 
     if (outlook.nextDue && outlook.nextDue >= today && outlook.nextDue <= rangeEnd) {
-      const acc = accounts.find((a) => a.name === outlook.account);
       const min = outlook.estimatedMinimum;
+      const payFull = outlook.payInFullToZeroInterest;
+      const useFull = payFull > 0 ? payFull : min;
       const intHint =
         outlook.estimatedInterestIfUnpaid > 0
-          ? ` · interés rotativo ~${outlook.estimatedInterestIfUnpaid.toLocaleString('es-CO')}`
+          ? ` · interés si dejas saldo ~${outlook.estimatedInterestIfUnpaid.toLocaleString('es-CO')}`
           : '';
       out.push({
         id: `due-${outlook.account}-${outlook.nextDue}`,
         date: outlook.nextDue,
         title: `Pago tarjeta · ${outlook.account}`,
-        signedAmount: -min,
+        signedAmount: -useFull,
         account: outlook.account,
         kind: 'card_due',
-        subtitle: `Mínimo orientativo · extracto ~${outlook.estimatedStatement.toLocaleString('es-CO')}${intHint}`,
+        subtitle: `Sin intereses (extracto) ~${payFull.toLocaleString('es-CO')} COP · mínimo ~${min.toLocaleString('es-CO')}${intHint}`,
       });
-      void acc;
     }
   }
 
