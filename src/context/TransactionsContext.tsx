@@ -8,7 +8,10 @@ import {
   type ReactNode,
 } from 'react';
 
+import { creditCardSummaries } from '../domain/accounts/creditSummary';
 import { activeAccountNames, isAccountLiquid } from '../domain/accounts/resolveAccounts';
+import { budgetProgressForMonth, type BudgetProgress } from '../domain/budgets';
+import type { CreditCardSummary } from '../domain/accounts/creditSummary';
 import { defaultLiquidForKind, inferAccountKind } from '../domain/accounts/inferAccountKind';
 import {
   computeAccountBalances,
@@ -20,6 +23,7 @@ import {
   type MonthFlow,
 } from '../domain/summaries';
 import { loadAccounts, saveAccounts } from '../storage/accounts';
+import { loadBudgets, saveBudgets } from '../storage/budgets';
 import { loadCategoryTree, saveCategoryTree, type CategoryTree } from '../storage/categoryTree';
 import { applyImport, parseNekoCsv } from '../import/parseNekoCsv';
 import { loadScheduledPayments, saveScheduledPayments } from '../storage/scheduled';
@@ -28,6 +32,8 @@ import { classifyNekoType } from '../import/nekoMapping';
 import type {
   AccountDef,
   AccountDefDraft,
+  CategoryBudget,
+  CategoryBudgetDraft,
   ImportResult,
   ScheduledPayment,
   ScheduledPaymentDraft,
@@ -68,6 +74,12 @@ type TransactionsContextValue = {
   saveCategoryTreeState: (tree: CategoryTree) => Promise<void>;
   addCategoryGroup: (name: string) => Promise<void>;
   addCategoryToGroup: (group: string, category: string) => Promise<void>;
+  budgets: CategoryBudget[];
+  budgetProgress: BudgetProgress[];
+  creditCardSummaries: CreditCardSummary[];
+  addBudget: (draft: CategoryBudgetDraft) => Promise<void>;
+  removeBudget: (id: string) => Promise<void>;
+  toggleBudget: (id: string, active: boolean) => Promise<void>;
   scheduledPayments: ScheduledPayment[];
   addScheduledPayment: (draft: ScheduledPaymentDraft) => Promise<void>;
   removeScheduledPayment: (id: string) => Promise<void>;
@@ -87,16 +99,18 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
   const [accounts, setAccounts] = useState<AccountDef[]>([]);
   const [categoryTree, setCategoryTreeState] = useState<CategoryTree>({});
+  const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [stored, scheduled, accs, tree] = await Promise.all([
+      const [stored, scheduled, accs, tree, budgetList] = await Promise.all([
         loadTransactions(),
         loadScheduledPayments(),
         loadAccounts(),
         loadCategoryTree(),
+        loadBudgets(),
       ]);
       if (!cancelled) {
         const sorted = sortByDateDesc(stored);
@@ -104,6 +118,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         setScheduledPayments(scheduled);
         setAccounts(accs);
         setCategoryTreeState(tree);
+        setBudgets(budgetList);
         setLoading(false);
         // Sincronizar cuentas nuevas del CSV sin bloquear la UI
         const existing = new Set(accs.map((a) => a.name.trim().toLowerCase()));
@@ -307,6 +322,36 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [categoryTree, persistCategoryTree],
   );
 
+  const persistBudgets = useCallback(async (next: CategoryBudget[]) => {
+    setBudgets(next);
+    await saveBudgets(next);
+  }, []);
+
+  const addBudget = useCallback(
+    async (draft: CategoryBudgetDraft) => {
+      const entry: CategoryBudget = {
+        ...draft,
+        id: `bud-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      };
+      await persistBudgets([...budgets, entry]);
+    },
+    [budgets, persistBudgets],
+  );
+
+  const removeBudget = useCallback(
+    async (id: string) => {
+      await persistBudgets(budgets.filter((b) => b.id !== id));
+    },
+    [budgets, persistBudgets],
+  );
+
+  const toggleBudget = useCallback(
+    async (id: string, active: boolean) => {
+      await persistBudgets(budgets.map((b) => (b.id === id ? { ...b, active } : b)));
+    },
+    [budgets, persistBudgets],
+  );
+
   const addCategoryToGroup = useCallback(
     async (group: string, category: string) => {
       const cat = category.trim();
@@ -396,6 +441,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     liquidAvailable,
     monthFlow,
     accountNames,
+    creditSummary,
+    budgetProg,
   } = useMemo(() => {
     let income = 0;
     let expense = 0;
@@ -413,6 +460,9 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     }
     const balances = computeAccountBalances(transactions);
     const liquidFn = (name: string) => isAccountLiquid(accounts, name);
+    const monthKey = currentMonthKey();
+  const creditSummary = creditCardSummaries(accounts, balances);
+    const budgetProg = budgetProgressForMonth(budgets, transactions, monthKey);
     return {
       totalIncome: income,
       totalExpense: expense,
@@ -421,10 +471,12 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       accountBalances: balances,
       totalInAccounts: totalAccountBalance(balances),
       liquidAvailable: liquidBalance(balances, liquidFn),
-      monthFlow: monthRealFlow(transactions, currentMonthKey()),
+      monthFlow: monthRealFlow(transactions, monthKey),
       accountNames: activeAccountNames(accounts, transactions),
+      creditSummary,
+      budgetProg,
     };
-  }, [transactions, accounts]);
+  }, [transactions, accounts, budgets]);
 
   const value = useMemo(
     () => ({
@@ -452,6 +504,12 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       saveCategoryTreeState,
       addCategoryGroup,
       addCategoryToGroup,
+      budgets,
+      budgetProgress: budgetProg,
+      creditCardSummaries: creditSummary,
+      addBudget,
+      removeBudget,
+      toggleBudget,
       scheduledPayments,
       addScheduledPayment,
       removeScheduledPayment,
@@ -474,6 +532,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       liquidAvailable,
       monthFlow,
       accountNames,
+      creditSummary,
+      budgetProg,
       accounts,
       addAccount,
       updateAccount,
@@ -481,6 +541,10 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       saveCategoryTreeState,
       addCategoryGroup,
       addCategoryToGroup,
+      budgets,
+      addBudget,
+      removeBudget,
+      toggleBudget,
       scheduledPayments,
       addScheduledPayment,
       removeScheduledPayment,

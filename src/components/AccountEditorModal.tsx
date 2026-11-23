@@ -38,7 +38,18 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
   const [kind, setKind] = useState<AccountKind>('bank');
   const [liquid, setLiquid] = useState(true);
   const [notes, setNotes] = useState('');
+  const [creditLimit, setCreditLimit] = useState('');
+  const [statementCloseDay, setStatementCloseDay] = useState('');
+  const [paymentDueDay, setPaymentDueDay] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const parseDay = (raw: string): number | undefined => {
+    const n = Number(raw.replace(/\D/g, ''));
+    if (!n || n < 1 || n > 28) {
+      return undefined;
+    }
+    return n;
+  };
 
   useEffect(() => {
     if (!visible) {
@@ -49,6 +60,9 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       setKind(editing.kind);
       setLiquid(editing.liquid);
       setNotes(editing.notes);
+      setCreditLimit(editing.creditLimit ? String(editing.creditLimit) : '');
+      setStatementCloseDay(editing.statementCloseDay ? String(editing.statementCloseDay) : '');
+      setPaymentDueDay(editing.paymentDueDay ? String(editing.paymentDueDay) : '');
     } else {
       const seed = initialName?.trim() ?? '';
       setName(seed);
@@ -56,6 +70,9 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       setKind(inferred);
       setLiquid(seed ? defaultLiquidForKind(inferred) : true);
       setNotes('');
+      setCreditLimit('');
+      setStatementCloseDay('');
+      setPaymentDueDay('');
     }
   }, [visible, editing, initialName]);
 
@@ -63,6 +80,9 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
     setKind(k);
     if (!editing) {
       setLiquid(defaultLiquidForKind(k));
+    }
+    if (k === 'credit' && !editing) {
+      setLiquid(false);
     }
   };
 
@@ -84,12 +104,16 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       return;
     }
 
+    const limit = Number(creditLimit.replace(/[^\d]/g, ''));
     const draft: AccountDefDraft = {
       name: trimmed,
       kind,
       liquid,
       notes: notes.trim(),
       archived: editing?.archived ?? false,
+      creditLimit: kind === 'credit' && limit > 0 ? limit : undefined,
+      statementCloseDay: kind === 'credit' ? parseDay(statementCloseDay) : undefined,
+      paymentDueDay: kind === 'credit' ? parseDay(paymentDueDay) : undefined,
     };
 
     setSaving(true);
@@ -156,6 +180,44 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
             </View>
             <Switch value={liquid} onValueChange={setLiquid} />
           </View>
+
+          {kind === 'credit' ? (
+            <>
+              <Text style={styles.label}>Cupo (COP, opcional)</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="number-pad"
+                value={creditLimit}
+                onChangeText={setCreditLimit}
+                placeholder="Ej. 5000000"
+                placeholderTextColor={colors.textMuted}
+              />
+              <View style={styles.row2}>
+                <View style={styles.half}>
+                  <Text style={styles.label}>Día corte (1-28)</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType="number-pad"
+                    value={statementCloseDay}
+                    onChangeText={setStatementCloseDay}
+                    placeholder="15"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+                <View style={styles.half}>
+                  <Text style={styles.label}>Día pago (1-28)</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType="number-pad"
+                    value={paymentDueDay}
+                    onChangeText={setPaymentDueDay}
+                    placeholder="5"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+              </View>
+            </>
+          ) : null}
 
           <Text style={styles.label}>Notas (opcional)</Text>
           <TextInput
@@ -228,6 +290,8 @@ const styles = StyleSheet.create({
   switchText: { flex: 1, gap: 4 },
   switchTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
   switchHint: { color: colors.textMuted, fontSize: 12, lineHeight: 16 },
+  row2: { flexDirection: 'row', gap: 10 },
+  half: { flex: 1 },
   save: {
     marginTop: 16,
     backgroundColor: colors.accent,

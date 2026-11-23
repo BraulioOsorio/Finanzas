@@ -2,6 +2,8 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AccountBalanceRow } from '../components/AccountBalanceRow';
+import { BudgetProgressList } from '../components/BudgetProgressList';
+import { CreditCardSummaryList } from '../components/CreditCardSummaryList';
 import { TransactionRow } from '../components/TransactionRow';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
@@ -16,6 +18,8 @@ export function HomeScreen() {
     accountBalances,
     transactions,
     transferCount,
+    budgetProgress,
+    creditCardSummaries,
   } = useTransactions();
   const recent = transactions.slice(0, 5);
   const topAccounts = accountBalances.slice(0, 4);
@@ -63,6 +67,9 @@ export function HomeScreen() {
               {transferCount} transferencias internas (no entran al flujo ingreso/gasto)
             </Text>
           ) : null}
+
+          <CreditCardSummaryList cards={creditCardSummaries} />
+          <BudgetProgressList items={budgetProgress} />
         </View>
 
         {topAccounts.length > 0 ? (

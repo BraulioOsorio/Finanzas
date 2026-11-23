@@ -33,8 +33,8 @@ NEKO ([nekomoney.app](https://www.nekomoney.app/es)) es una app **cerrada** (iOS
 ## Qué NO está aún (premium / complejo en NEKO)
 
 - Recordatorios y **pagos a meses** con lógica de tarjeta
-- Presupuesto por categoría
-- Tarjetas/préstamos con lógica de corte
+- Presupuesto por categoría (v1 en Categorías + barras en Inicio)
+- Tarjetas: cupo, corte y día de pago (v1 en editar cuenta tipo crédito)
 - Widgets, Siri, sincronización nube
 - Import PDF / IA
 

@@ -19,7 +19,25 @@ export type AccountDef = {
   liquid: boolean;
   notes: string;
   archived: boolean;
+  /** Tarjeta de crédito (opcional) */
+  creditLimit?: number;
+  /** Día de cierre de extracto (1–28) */
+  statementCloseDay?: number;
+  /** Día límite de pago (1–28) */
+  paymentDueDay?: number;
 };
+
+/** Presupuesto mensual por grupo o categoría Neko */
+export type CategoryBudget = {
+  id: string;
+  categoryGroup: string;
+  /** Vacío = todo el grupo */
+  category: string;
+  monthlyLimit: number;
+  active: boolean;
+};
+
+export type CategoryBudgetDraft = Omit<CategoryBudget, 'id'>;
 
 export type AccountDefDraft = Omit<AccountDef, 'id'>;
 
