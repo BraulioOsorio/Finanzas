@@ -44,7 +44,7 @@ El modelo de datos y pantallas siguen la lógica de **[NEKO: Control de Gastos](
 - **Iconos de marca**: bancos, fintech y comercios CO (logos cuando cargan + iniciales de respaldo)
 - Datos guardados en el dispositivo (AsyncStorage)
 
-Ampliar marcas en `src/domain/brands/brandCatalog.ts` o PNG en `assets/brands/` (ver README ahí).
+Ampliar marcas en `src/domain/brands/brandCatalog.ts` o PNG en `assets/brands/` (ver README ahí). Tras importar tu CSV de Neko, revisa cobertura con `npm run brands:from-csv`.
 
 ### Verificar un CSV (desarrollo)
 

@@ -29,7 +29,7 @@ export const BRANDS: BrandDef[] = [
     label: 'Davivienda',
     shortLabel: 'DV',
     color: '#e30613',
-    keywords: ['davivienda', 'g-zero davivienda', 'daviplata', 'davipuntos'],
+    keywords: ['davivienda', 'g-zero', 'g-zero davivienda', 'daviplata', 'davipuntos'],
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Davivienda_logo.svg/128px-Davivienda_logo.svg.png',
   },
@@ -161,7 +161,7 @@ export const BRANDS: BrandDef[] = [
     label: 'Nu',
     shortLabel: 'Nu',
     color: '#820ad1',
-    keywords: ['nu credito', 'nu crédito', 'nubank', ' nu ', 'cuenta nu'],
+    keywords: ['nu credito', 'nu crédito', 'nubank', ' nu ', 'cuenta nu', 'pago de nu'],
     logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Nubank_logo.svg/128px-Nubank_logo.svg.png',
   },
   {
@@ -176,7 +176,15 @@ export const BRANDS: BrandDef[] = [
     label: 'Rappi',
     shortLabel: 'Rp',
     color: '#ff441f',
-    keywords: ['rappi', 'rappicard', 'rappicuenta', 'rappipay', 'turbo'],
+    keywords: [
+      'rappi',
+      'rappicard',
+      'rappicuenta',
+      'rappipay',
+      'turbo',
+      'completar rappicuenta',
+      'pago de rappicard',
+    ],
     logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Rappi_logo.svg/128px-Rappi_logo.svg.png',
   },
   {
@@ -259,7 +267,7 @@ export const BRANDS: BrandDef[] = [
     label: 'Efectivo',
     shortLabel: 'Ef',
     color: '#22c55e',
-    keywords: ['efectivo', 'cash', 'cajero'],
+    keywords: ['efectivo', 'cash', 'cajero', 'paso de efectivo', 'retirar efectivo'],
   },
   {
     id: 'ahorro',
@@ -409,7 +417,7 @@ export const BRANDS: BrandDef[] = [
     label: 'Mercado Libre',
     shortLabel: 'ML',
     color: '#ffe600',
-    keywords: ['mercado libre', 'mercadopago', 'meli'],
+    keywords: ['mercado libre', 'mercadolibre', 'mercadopago', 'meli', 'mercado libre'],
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/MercadoLibre_logo.svg/128px-MercadoLibre_logo.svg.png',
   },
@@ -493,7 +501,7 @@ export const BRANDS: BrandDef[] = [
     label: 'Netflix',
     shortLabel: 'Nx',
     color: '#e50914',
-    keywords: ['netflix'],
+    keywords: ['netflix', 'netflix premium'],
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/128px-Netflix_2015_logo.svg.png',
   },
@@ -502,7 +510,7 @@ export const BRANDS: BrandDef[] = [
     label: 'Spotify',
     shortLabel: 'Sp',
     color: '#1db954',
-    keywords: ['spotify'],
+    keywords: ['spotify', 'spotify premium'],
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Spotify_icon.svg/128px-Spotify_icon.svg.png',
   },
@@ -511,7 +519,7 @@ export const BRANDS: BrandDef[] = [
     label: 'YouTube',
     shortLabel: 'Yt',
     color: '#ff0000',
-    keywords: ['youtube'],
+    keywords: ['youtube', 'youtube premium'],
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/128px-YouTube_full-color_icon_%282017%29.svg.png',
   },
@@ -589,6 +597,159 @@ export const BRANDS: BrandDef[] = [
     color: '#3b82f6',
     keywords: ['neko premium', 'neko app'],
   },
+  {
+    id: 'crunchyroll',
+    label: 'Crunchyroll',
+    shortLabel: 'Cr',
+    color: '#f47521',
+    keywords: ['crunchyroll', 'crunchy roll'],
+    logoUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Crunchyroll_Logo.svg/128px-Crunchyroll_Logo.svg.png',
+  },
+  {
+    id: 'canva',
+    label: 'Canva',
+    shortLabel: 'Cv',
+    color: '#00c4cc',
+    keywords: ['canva', 'canva pro'],
+    logoUrl:
+      'https://upload.wikimedia.org/wikipedia/en/thumb/0/00/Canva_logo.svg/128px-Canva_logo.svg.png',
+  },
+  {
+    id: 'icloud',
+    label: 'iCloud',
+    shortLabel: 'iC',
+    color: '#3693f3',
+    keywords: ['icloud', 'i cloud'],
+  },
+  {
+    id: 'xiaomi',
+    label: 'Xiaomi',
+    shortLabel: 'Xm',
+    color: '#ff6900',
+    keywords: ['xiaomi', 'redmi', 'mi store', 'poco'],
+    logoUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Xiaomi_logo_%282021-%29.svg/128px-Xiaomi_logo_%282021-%29.svg.png',
+  },
+  {
+    id: 'sura',
+    label: 'SURA',
+    shortLabel: 'Su',
+    color: '#0033a0',
+    keywords: ['seguro sura', 'sura', 'sura seguros'],
+  },
+  {
+    id: 'fna',
+    label: 'FNA',
+    shortLabel: 'FN',
+    color: '#00652e',
+    keywords: ['fna', 'fondo nacional del ahorro'],
+  },
+  {
+    id: 'indriver',
+    label: 'inDrive',
+    shortLabel: 'in',
+    color: '#c1f11d',
+    keywords: ['indriver', 'in drive', 'indrive'],
+  },
+  {
+    id: 'simit',
+    label: 'SIMIT',
+    shortLabel: 'Si',
+    color: '#1e3a8a',
+    keywords: ['simit', 'comparendo', 'multa transito', 'multa tránsito'],
+  },
+  {
+    id: 'oxxo',
+    label: 'OXXO',
+    shortLabel: 'Ox',
+    color: '#e1251b',
+    keywords: ['oxxo'],
+    logoUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Oxxo_Logo.svg/128px-Oxxo_Logo.svg.png',
+  },
+  {
+    id: 'colanta',
+    label: 'Colanta',
+    shortLabel: 'Co',
+    color: '#e30613',
+    keywords: ['colanta'],
+  },
+  {
+    id: 'mamor',
+    label: 'Mamor',
+    shortLabel: 'Mm',
+    color: '#7c3aed',
+    keywords: ['mamor', 'pago de mamor', 'peluche mamor'],
+  },
+  {
+    id: 'casa',
+    label: 'Casa',
+    shortLabel: 'Cs',
+    color: '#64748b',
+    keywords: ['casa', 'energía', 'energia', 'servicios hogar', 'suscripción bancolombia'],
+  },
+  {
+    id: 'amor',
+    label: 'Amor / familia',
+    shortLabel: '♥',
+    color: '#ec4899',
+    keywords: [
+      'amor',
+      'celular amor',
+      'telefono amor',
+      'teléfono amor',
+      'plata mamá',
+      'plata mama',
+      'prestado amor',
+      'regalo amor',
+      'pago amor',
+      'deuda amor',
+      'préstamo amor',
+      'prestamo amor',
+    ],
+  },
+  {
+    id: 'paypal',
+    label: 'PayPal',
+    shortLabel: 'PP',
+    color: '#003087',
+    keywords: ['paypal'],
+    logoUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/128px-PayPal.svg.png',
+  },
+  {
+    id: 'twitch',
+    label: 'Twitch',
+    shortLabel: 'Tw',
+    color: '#9146ff',
+    keywords: ['twitch'],
+    logoUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Twitch_logo.svg/128px-Twitch_logo.svg.png',
+  },
+  {
+    id: 'nintendo',
+    label: 'Nintendo',
+    shortLabel: 'Ni',
+    color: '#e60012',
+    keywords: ['nintendo', 'eshop nintendo'],
+    logoUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Nintendo.svg/128px-Nintendo.svg.png',
+  },
+  {
+    id: 'paramount',
+    label: 'Paramount+',
+    shortLabel: 'P+',
+    color: '#0064ff',
+    keywords: ['paramount', 'paramount+'],
+  },
+  {
+    id: 'cursor',
+    label: 'Cursor',
+    shortLabel: 'Cu',
+    color: '#000000',
+    keywords: ['cursor', 'cursor pro', 'cursor ai'],
+  },
 
   // ——— Telecom CO ———
   {
@@ -658,7 +819,7 @@ export const BRANDS: BrandDef[] = [
     label: 'Cine',
     shortLabel: 'Cn',
     color: '#7c3aed',
-    keywords: ['cinemark', 'cine colombia', 'cine', 'procinal', 'cinepolis'],
+    keywords: ['cinemark', 'cine colombia', 'procinal', 'cinepolis', 'cine'],
   },
   {
     id: 'universidad',

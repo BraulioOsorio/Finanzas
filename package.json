@@ -25,7 +25,9 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "brands:from-csv": "tsx scripts/suggest-brands-from-csv.ts",
+    "verify:neko-csv": "tsx scripts/verify-neko-import.ts"
   },
   "private": true
 }
