@@ -70,6 +70,28 @@ export function signedAmountForScheduled(item: ScheduledPayment): number {
   return item.kind === 'income' ? item.amount : -item.amount;
 }
 
+/** Próximo ingreso programado en Plan (quincena, sueldo, etc.). */
+export function nextPlannedIncomeDate(
+  scheduled: ScheduledPayment[],
+  today: string,
+  lookaheadDays = 120,
+): string | null {
+  const rangeEnd = addDays(today, lookaheadDays);
+  let best: string | null = null;
+  for (const item of scheduled) {
+    if (!item.active || item.kind !== 'income') {
+      continue;
+    }
+    const dates = occurrencesInRange(item, today, rangeEnd);
+    for (const d of dates) {
+      if (d >= today && (!best || d < best)) {
+        best = d;
+      }
+    }
+  }
+  return best;
+}
+
 export function scheduleFrequencyLabel(freq: ScheduledPayment['frequency']): string {
   switch (freq) {
     case 'once':

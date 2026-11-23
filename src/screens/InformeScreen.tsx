@@ -1,18 +1,27 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AccountBalanceRow } from '../components/AccountBalanceRow';
 import { BudgetProgressList } from '../components/BudgetProgressList';
 import { useTransactions } from '../context/TransactionsContext';
 import { budgetProgressForMonth } from '../domain/budgets';
+import { topCategorySpendingBetween } from '../domain/categorySpend';
 import { formatMonthTitle } from '../domain/calendar';
-import { topCategorySpending } from '../domain/categorySpend';
-import { distinctMonthKeys } from '../domain/historyFilters';
+import { distinctMonthKeys, EMPTY_HISTORY_FILTER } from '../domain/historyFilters';
 import { computeNetWorth } from '../domain/netWorth';
-import { currentMonthKey, monthRealFlow } from '../domain/summaries';
+import { flowBetween, periodBounds, type ReportPeriodKind } from '../domain/reportPeriod';
+import { currentMonthKey } from '../domain/summaries';
 import { colors } from '../theme';
 import { formatCurrency } from '../utils/format';
+
+const PERIODS: ReportPeriodKind[] = ['month', 'quarter', 'year'];
+const PERIOD_LABELS: Record<ReportPeriodKind, string> = {
+  month: 'Mes',
+  quarter: 'Trimestre',
+  year: 'Año',
+};
 
 function MonthChip({
   label,
@@ -31,6 +40,7 @@ function MonthChip({
 }
 
 export function InformeScreen() {
+  const navigation = useNavigation();
   const {
     loading,
     monthFlow,
@@ -43,9 +53,11 @@ export function InformeScreen() {
     budgets,
     scheduledPayments,
     installmentPlans,
+    setHistoryFilterSeed,
   } = useTransactions();
 
   const [monthKey, setMonthKey] = useState(monthFlow.monthKey || currentMonthKey());
+  const [periodKind, setPeriodKind] = useState<ReportPeriodKind>('month');
 
   const months = useMemo(() => {
     const keys = distinctMonthKeys(transactions);
@@ -56,35 +68,42 @@ export function InformeScreen() {
     return keys;
   }, [transactions]);
 
-  const selectedFlow = useMemo(
-    () =>
-      monthKey === monthFlow.monthKey
-        ? monthFlow
-        : monthRealFlow(transactions, monthKey),
-    [monthKey, monthFlow, transactions],
+  const bounds = useMemo(
+    () => periodBounds(periodKind, monthKey),
+    [periodKind, monthKey],
   );
 
-  const selectedBudgetProgress = useMemo(
+  const selectedFlow = useMemo(
     () =>
-      monthKey === monthFlow.monthKey
-        ? budgetProgress
-        : budgetProgressForMonth(budgets, transactions, monthKey, {
-            includePlanned: true,
-            scheduled: scheduledPayments,
-            installmentPlans,
-            accounts,
-          }),
-    [
-      monthKey,
-      monthFlow.monthKey,
-      budgetProgress,
-      budgets,
-      transactions,
-      scheduledPayments,
-      installmentPlans,
-      accounts,
-    ],
+      periodKind === 'month' && monthKey === monthFlow.monthKey
+        ? monthFlow
+        : flowBetween(transactions, bounds.start, bounds.end, bounds.label),
+    [periodKind, monthKey, monthFlow, transactions, bounds],
   );
+
+  const selectedBudgetProgress = useMemo(() => {
+    if (periodKind !== 'month') {
+      return [];
+    }
+    return monthKey === monthFlow.monthKey
+      ? budgetProgress
+      : budgetProgressForMonth(budgets, transactions, monthKey, {
+          includePlanned: true,
+          scheduled: scheduledPayments,
+          installmentPlans,
+          accounts,
+        });
+  }, [
+    periodKind,
+    monthKey,
+    monthFlow.monthKey,
+    budgetProgress,
+    budgets,
+    transactions,
+    scheduledPayments,
+    installmentPlans,
+    accounts,
+  ]);
 
   const net = useMemo(
     () => computeNetWorth(accounts, accountBalances, creditCardSummaries, debtSummaries),
@@ -92,23 +111,44 @@ export function InformeScreen() {
   );
 
   const topCats = useMemo(
-    () => topCategorySpending(transactions, monthKey, 10),
-    [transactions, monthKey],
+    () => topCategorySpendingBetween(transactions, bounds.start, bounds.end, 10),
+    [transactions, bounds],
   );
 
   const maxCat = topCats[0]?.spent ?? 1;
-  const monthTitle = formatMonthTitle(monthKey);
+
+  const openCategoryInHistory = (group: string, category: string, label: string) => {
+    setHistoryFilterSeed({
+      ...EMPTY_HISTORY_FILTER,
+      monthKey: periodKind === 'month' ? monthKey : '',
+      categoryGroup: group,
+      query: category || label,
+    });
+    navigation.navigate('Historial' as never);
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Informe</Text>
         <Text style={styles.subtitle}>
-          Patrimonio (hoy) y flujo de {monthTitle}. Elige otro mes para comparar gastos y
-          presupuesto.
+          Patrimonio al día de hoy y flujo del período ({bounds.label}). Toca una categoría para ver
+          movimientos en Historial.
         </Text>
 
-        <Text style={styles.filterLabel}>Mes del informe</Text>
+        <Text style={styles.filterLabel}>Período</Text>
+        <View style={styles.chipRow}>
+          {PERIODS.map((p) => (
+            <MonthChip
+              key={p}
+              label={PERIOD_LABELS[p]}
+              active={periodKind === p}
+              onPress={() => setPeriodKind(p)}
+            />
+          ))}
+        </View>
+
+        <Text style={styles.filterLabel}>Mes ancla</Text>
         <View style={styles.chipRow}>
           {months.slice(0, 8).map((m) => (
             <MonthChip key={m} label={m} active={monthKey === m} onPress={() => setMonthKey(m)} />
@@ -117,7 +157,7 @@ export function InformeScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Patrimonio (orientativo)</Text>
-          <Text style={styles.cardHint}>Saldos actuales de todas las cuentas; no cambia con el mes.</Text>
+          <Text style={styles.cardHint}>Saldos actuales; no cambia con el período.</Text>
           {loading ? (
             <Text style={styles.meta}>Cargando…</Text>
           ) : (
@@ -126,17 +166,15 @@ export function InformeScreen() {
               <Row label="Disponible líquido" value={formatCurrency(net.liquid)} accent />
               <Row label="Usado en tarjetas" value={formatCurrency(net.creditOwed)} negative />
               <Row label="Buckets deuda" value={formatCurrency(net.debtBuckets)} negative />
-              <Row
-                label="Líquido neto (sin deuda tarjeta)"
-                value={formatCurrency(net.netLiquid)}
-                bold
-              />
+              <Row label="Líquido neto" value={formatCurrency(net.netLiquid)} bold />
             </>
           )}
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Flujo — {monthTitle}</Text>
+          <Text style={styles.cardTitle}>
+            Flujo — {bounds.label} ({bounds.start} → {bounds.end})
+          </Text>
           <Row label="Ingresos" value={formatCurrency(selectedFlow.income)} accent />
           <Row label="Gastos" value={formatCurrency(selectedFlow.expense)} negative />
           <Row
@@ -147,17 +185,21 @@ export function InformeScreen() {
           />
         </View>
 
-        <Text style={styles.section}>Gastos por categoría ({monthKey})</Text>
+        <Text style={styles.section}>Gastos por categoría</Text>
         {topCats.length === 0 ? (
-          <Text style={styles.meta}>Sin gastos en este mes.</Text>
+          <Text style={styles.meta}>Sin gastos en este período.</Text>
         ) : (
           topCats.map((row) => (
-            <View key={row.key} style={styles.catRow}>
+            <Pressable
+              key={row.key}
+              style={styles.catRow}
+              onPress={() => openCategoryInHistory(row.group, row.category, row.label)}
+            >
               <View style={styles.catLead}>
                 <Text style={styles.catLabel} numberOfLines={1}>
                   {row.label}
                 </Text>
-                <Text style={styles.catMeta}>{row.count} movimientos</Text>
+                <Text style={styles.catMeta}>{row.count} movimientos · Historial</Text>
               </View>
               <View style={styles.barTrack}>
                 <View
@@ -165,11 +207,15 @@ export function InformeScreen() {
                 />
               </View>
               <Text style={styles.catAmount}>{formatCurrency(row.spent)}</Text>
-            </View>
+            </Pressable>
           ))
         )}
 
-        <BudgetProgressList items={selectedBudgetProgress} monthKey={monthKey} />
+        {periodKind === 'month' ? (
+          <BudgetProgressList items={selectedBudgetProgress} monthKey={monthKey} />
+        ) : (
+          <Text style={styles.meta}>Presupuesto mensual: cambia a vista «Mes» para ver barras.</Text>
+        )}
 
         <Text style={styles.section}>Todas las cuentas</Text>
         <View style={styles.list}>
@@ -251,7 +297,7 @@ const styles = StyleSheet.create({
   catRow: { gap: 6, marginBottom: 10 },
   catLead: { flexDirection: 'row', justifyContent: 'space-between' },
   catLabel: { color: colors.text, fontSize: 14, fontWeight: '600', flex: 1 },
-  catMeta: { color: colors.textMuted, fontSize: 11 },
+  catMeta: { color: colors.accent, fontSize: 11, fontWeight: '700' },
   barTrack: {
     height: 6,
     borderRadius: 3,

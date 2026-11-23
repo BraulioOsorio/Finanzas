@@ -53,7 +53,7 @@ export function OnboardingGate({ children }: { children: ReactNode }) {
                 <Text style={styles.body}>
                   {transactionCount > 0
                     ? 'Ya hay movimientos cargados. Explora Inicio, Historial y Calendario.'
-                    : 'Importa tu CSV de Neko o registra tu primer gasto en Registrar.'}
+                    : 'Configura cuentas, añade tu quincena en Plan y registra tu primer gasto.'}
                 </Text>
               </>
             ) : null}

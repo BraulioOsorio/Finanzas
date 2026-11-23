@@ -15,6 +15,7 @@ import {
 import { applyCreditPresetToDraft } from '../domain/credit/creditPresets';
 import { activeAccountNames, isAccountLiquid } from '../domain/accounts/resolveAccounts';
 import { budgetProgressForMonth, type BudgetProgress } from '../domain/budgets';
+import type { HistoryFilterState } from '../domain/historyFilters';
 import { debtBucketSummaries, type DebtBucketSummary } from '../domain/debtSummary';
 import type { CreditCardSummary } from '../domain/accounts/creditSummary';
 import { defaultLiquidForKind, inferAccountKind } from '../domain/accounts/inferAccountKind';
@@ -107,6 +108,8 @@ type TransactionsContextValue = {
   todayAgenda: ReturnType<typeof buildTodayAgenda>;
   tomorrowHeadline: UpcomingItem[];
   addInstallmentPlansBatch: (drafts: InstallmentPlanDraft[]) => Promise<number>;
+  historyFilterSeed: HistoryFilterState | null;
+  setHistoryFilterSeed: (filter: HistoryFilterState | null) => void;
 };
 
 const TransactionsContext = createContext<TransactionsContextValue | null>(null);
@@ -124,6 +127,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   const [accounts, setAccounts] = useState<AccountDef[]>([]);
   const [categoryTree, setCategoryTreeState] = useState<CategoryTree>({});
   const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
+  const [historyFilterSeed, setHistoryFilterSeed] = useState<HistoryFilterState | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -640,6 +644,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       todayAgenda,
       tomorrowHeadline,
       addInstallmentPlansBatch,
+      historyFilterSeed,
+      setHistoryFilterSeed,
     }),
     [
       transactions,
@@ -686,6 +692,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       todayAgenda,
       tomorrowHeadline,
       addInstallmentPlansBatch,
+      historyFilterSeed,
     ],
   );
 

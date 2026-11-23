@@ -8,10 +8,18 @@ import { saveWidgetSnapshot } from '../storage/widgetSnapshot';
 /** Escribe disponible + tarjetas para widget nativo (EAS / prebuild). */
 export function WidgetSnapshotSync() {
   const { safeToSpendHorizon } = usePreferences();
-  const { accounts, accountBalances, upcomingItems, creditCardSummaries } = useTransactions();
+  const { accounts, accountBalances, upcomingItems, creditCardSummaries, scheduledPayments } =
+    useTransactions();
 
   useEffect(() => {
-    const snap = computeSafeToSpend(safeToSpendHorizon, accounts, accountBalances, upcomingItems);
+    const snap = computeSafeToSpend(
+      safeToSpendHorizon,
+      accounts,
+      accountBalances,
+      upcomingItems,
+      undefined,
+      scheduledPayments,
+    );
     const cardsPayInFull = creditCardSummaries
       .filter((c) => c.outlook?.payInFullToZeroInterest)
       .map((c) => ({
@@ -34,6 +42,7 @@ export function WidgetSnapshotSync() {
     accountBalances,
     upcomingItems,
     creditCardSummaries,
+    scheduledPayments,
   ]);
 
   return null;

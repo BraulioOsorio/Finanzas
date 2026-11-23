@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -38,8 +38,17 @@ export function HistoryScreen() {
     accounts,
     installmentPlans,
     addInstallmentPlan,
+    historyFilterSeed,
+    setHistoryFilterSeed,
   } = useTransactions();
   const [filters, setFilters] = useState(EMPTY_HISTORY_FILTER);
+
+  useEffect(() => {
+    if (historyFilterSeed) {
+      setFilters(historyFilterSeed);
+      setHistoryFilterSeed(null);
+    }
+  }, [historyFilterSeed, setHistoryFilterSeed]);
   const [editing, setEditing] = useState<Transaction | null>(null);
 
   const months = useMemo(() => distinctMonthKeys(transactions), [transactions]);

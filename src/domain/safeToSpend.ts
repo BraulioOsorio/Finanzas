@@ -1,10 +1,11 @@
 import { accountDefByName, isAccountLiquid } from './accounts/resolveAccounts';
 import { daysInMonth } from './calendar';
+import { nextPlannedIncomeDate } from './scheduleProjection';
 import type { UpcomingItem } from './upcoming';
-import type { AccountDef } from '../types';
+import type { AccountDef, ScheduledPayment } from '../types';
 import type { AccountBalance } from './summaries';
 
-export type SafeToSpendHorizon = 'today' | 'month_end' | 'days_14';
+export type SafeToSpendHorizon = 'today' | 'month_end' | 'days_14' | 'until_payday';
 
 export type SafeToSpendLine = {
   id: string;
@@ -33,8 +34,19 @@ function addDays(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function horizonThroughDate(
+export function resolveThroughDate(
   horizon: SafeToSpendHorizon,
+  today: string,
+  scheduled: ScheduledPayment[],
+): string {
+  if (horizon === 'until_payday') {
+    return nextPlannedIncomeDate(scheduled, today) ?? addDays(today, 14);
+  }
+  return horizonThroughDate(horizon, today);
+}
+
+export function horizonThroughDate(
+  horizon: Exclude<SafeToSpendHorizon, 'until_payday'>,
   today = new Date().toISOString().slice(0, 10),
 ): string {
   if (horizon === 'today') {
@@ -56,6 +68,8 @@ export function horizonLabel(horizon: SafeToSpendHorizon): string {
       return 'Fin de mes';
     case 'days_14':
       return '14 días';
+    case 'until_payday':
+      return 'Hasta ingreso';
   }
 }
 
@@ -89,8 +103,13 @@ export function computeSafeToSpend(
   balances: AccountBalance[],
   upcoming: UpcomingItem[],
   today = new Date().toISOString().slice(0, 10),
+  scheduled: ScheduledPayment[] = [],
 ): SafeToSpendSnapshot {
-  const throughDate = horizonThroughDate(horizon, today);
+  const throughDate = resolveThroughDate(horizon, today, scheduled);
+  const label =
+    horizon === 'until_payday' && nextPlannedIncomeDate(scheduled, today)
+      ? 'Hasta próximo ingreso'
+      : horizonLabel(horizon);
   const liquidRows = balances.filter((b) => isAccountLiquid(accounts, b.account));
   const liquidNow = liquidRows.reduce((s, b) => s + b.balance, 0);
 
@@ -176,7 +195,7 @@ export function computeSafeToSpend(
 
   return {
     horizon,
-    horizonLabel: horizonLabel(horizon),
+    horizonLabel: label,
     throughDate,
     liquidNow,
     projectedInflows,

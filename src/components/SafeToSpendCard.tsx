@@ -4,10 +4,11 @@ import type { SafeToSpendHorizon, SafeToSpendSnapshot } from '../domain/safeToSp
 import { colors } from '../theme';
 import { formatCurrency, formatShortDate } from '../utils/format';
 
-const HORIZONS: SafeToSpendHorizon[] = ['today', 'month_end', 'days_14'];
+const HORIZONS: SafeToSpendHorizon[] = ['today', 'until_payday', 'month_end', 'days_14'];
 const LABELS: Record<SafeToSpendHorizon, string> = {
   today: 'Hoy',
-  month_end: 'Fin de mes',
+  until_payday: 'Ingreso',
+  month_end: 'Fin mes',
   days_14: '14 días',
 };
 
@@ -15,10 +16,11 @@ type Props = {
   snapshot: SafeToSpendSnapshot;
   horizon: SafeToSpendHorizon;
   onHorizon: (h: SafeToSpendHorizon) => void;
+  onOpenDetail?: () => void;
   loading?: boolean;
 };
 
-export function SafeToSpendCard({ snapshot, horizon, onHorizon, loading }: Props) {
+export function SafeToSpendCard({ snapshot, horizon, onHorizon, onOpenDetail, loading }: Props) {
   const low = snapshot.safeToSpend < 0;
 
   return (
@@ -71,6 +73,11 @@ export function SafeToSpendCard({ snapshot, horizon, onHorizon, loading }: Props
           ) : (
             <Text style={styles.hint}>Sin pagos programados en este horizonte (revisa Plan y Cuentas).</Text>
           )}
+          {onOpenDetail ? (
+            <Pressable onPress={onOpenDetail} hitSlop={8}>
+              <Text style={styles.detail}>Ver desglose completo</Text>
+            </Pressable>
+          ) : null}
         </>
       )}
     </View>
@@ -107,4 +114,5 @@ const styles = StyleSheet.create({
   lines: { marginTop: 4, gap: 4 },
   line: { color: colors.text, fontSize: 11 },
   more: { color: colors.textMuted, fontSize: 11, fontStyle: 'italic' },
+  detail: { color: colors.accent, fontSize: 13, fontWeight: '800', marginTop: 8 },
 });

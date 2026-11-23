@@ -8,6 +8,10 @@ App móvil personal para registrar **ingresos y gastos**, ver **saldo** y consul
 - [Expo Go](https://expo.dev/go) en el teléfono (la forma más rápida de probar)
 - Para builds nativas: Android Studio o Xcode (macOS)
 
+## Rama principal
+
+Todo el desarrollo NEKO/Finanzas vive en **`main`** (merge de features de cortes, deudas, disponible v2, informes, etc.).
+
 ## Cómo ejecutarla
 
 ```bash

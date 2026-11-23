@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,6 +8,7 @@ import { CreditCardSummaryList } from '../components/CreditCardSummaryList';
 import { DebtSummaryList } from '../components/DebtSummaryList';
 import { OverdraftAlertList } from '../components/OverdraftAlertList';
 import { SafeToSpendCard } from '../components/SafeToSpendCard';
+import { SafeToSpendDetailModal } from '../components/SafeToSpendDetailModal';
 import { TransactionRow } from '../components/TransactionRow';
 import { TodayAgenda } from '../components/TodayAgenda';
 import { UpcomingList } from '../components/UpcomingList';
@@ -34,11 +35,21 @@ export function HomeScreen() {
     todayAgenda,
     tomorrowHeadline,
     accounts,
+    scheduledPayments,
   } = useTransactions();
   const { safeToSpendHorizon, setSafeToSpendHorizon } = usePreferences();
+  const [detailOpen, setDetailOpen] = useState(false);
   const safeSnapshot = useMemo(
-    () => computeSafeToSpend(safeToSpendHorizon, accounts, accountBalances, upcomingItems),
-    [safeToSpendHorizon, accounts, accountBalances, upcomingItems],
+    () =>
+      computeSafeToSpend(
+        safeToSpendHorizon,
+        accounts,
+        accountBalances,
+        upcomingItems,
+        undefined,
+        scheduledPayments,
+      ),
+    [safeToSpendHorizon, accounts, accountBalances, upcomingItems, scheduledPayments],
   );
   const recent = transactions.slice(0, 5);
   const topAccounts = accountBalances.slice(0, 4);
@@ -55,7 +66,13 @@ export function HomeScreen() {
           snapshot={safeSnapshot}
           horizon={safeToSpendHorizon}
           onHorizon={(h) => void setSafeToSpendHorizon(h)}
+          onOpenDetail={() => setDetailOpen(true)}
           loading={loading}
+        />
+        <SafeToSpendDetailModal
+          visible={detailOpen}
+          snapshot={safeSnapshot}
+          onClose={() => setDetailOpen(false)}
         />
 
         <OverdraftAlertList items={overdraftAlerts} />

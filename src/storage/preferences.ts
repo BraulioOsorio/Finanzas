@@ -20,7 +20,7 @@ const DEFAULTS: StoredPreferences = {
 };
 
 function parseHorizon(value: unknown): SafeToSpendHorizon {
-  if (value === 'today' || value === 'month_end' || value === 'days_14') {
+  if (value === 'today' || value === 'month_end' || value === 'days_14' || value === 'until_payday') {
     return value;
   }
   return DEFAULTS.safeToSpendHorizon;
