@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'reverse_engineered/credit_card_bloc.dart';
-import 'reverse_engineered/financial_plan_bloc.dart';
-import 'reverse_engineered/safe_to_spend_bloc.dart';
+import 'cubit/neko_data_cubit.dart';
 import 'shell/neko_shell.dart';
 import 'theme/neko_theme.dart';
 
@@ -19,12 +17,8 @@ class NekoForkApp extends StatelessWidget {
         statusBarIconBrightness: Brightness.light,
       ),
     );
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (_) => SafeToSpendBloc()..initialize()),
-        BlocProvider(create: (_) => CreditCardBloc()),
-        BlocProvider(create: (_) => FinancialPlanBloc()),
-      ],
+    return BlocProvider(
+      create: (_) => NekoDataCubit(),
       child: MaterialApp(
         title: 'Neko',
         debugShowCheckedModeBanner: false,

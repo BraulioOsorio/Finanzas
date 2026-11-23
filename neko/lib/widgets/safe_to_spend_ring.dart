@@ -63,14 +63,10 @@ class SafeToSpendRing extends StatelessWidget {
   }
 
   String _formatMoney(double v) {
-    final s = v.toStringAsFixed(0);
-    final buf = StringBuffer();
-    for (var i = 0; i < s.length; i++) {
-      final pos = s.length - i;
-      if (i > 0 && pos % 3 == 0) buf.write('.');
-      buf.write(s[i]);
-    }
-    return buf.toString();
+    return v.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
   }
 }
 
