@@ -1,49 +1,8 @@
-# NEKO APK (solo local, no versionar binario ajeno)
-*.apk
-reference/
-
-# dependencies
 node_modules/
-
-# Expo
 .expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# env
-.env
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-/ios
-/android
-
-# datos personales tipo backup NEKO
-*.sqlite
+reference/
+*.apk
 *.db
-Neko - My Data
-Neko-My-Data
+*.sqlite
+.env
+.DS_Store

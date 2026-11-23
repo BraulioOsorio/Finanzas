@@ -1,18 +1,5 @@
-# NEKO fork — rama `neko`
+# Rama `neko`
 
-Clon **propio** de NEKO (APK + ingeniería inversa). **Sin** el front del viejo Finanzas en `main`.
+Vacía a propósito: aquí se construirá el clon de NEKO desde cero (APK en `~/Descargas/`, splits en `reference/` local).
 
-| Parte | Dónde |
-|--------|--------|
-| UI mínima (reconstruir NEKO) | `app/` Expo Router |
-| Motor datos (ledger, SQLite) | `src/domain/`, `src/import/` |
-| Fork Flutter | `neko_app/` |
-| Binarios APK | `reference/` (local) |
-
-```bash
-git checkout neko
-npm install
-npm start
-```
-
-Ver `docs/RAMA-NEKO.md`.
+`main` no se usa.
