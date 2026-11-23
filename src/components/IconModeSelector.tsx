@@ -1,6 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { usePreferences } from '../context/PreferencesContext';
 import { colors } from '../theme';
 import type { IconDisplayMode } from '../types';
 
@@ -22,18 +21,21 @@ const OPTIONS: { mode: IconDisplayMode; title: string; detail: string }[] = [
   },
 ];
 
-export function IconModeSelector() {
-  const { iconDisplayMode, setIconDisplayMode } = usePreferences();
+type Props = {
+  draftMode: IconDisplayMode;
+  onSelectDraft: (mode: IconDisplayMode) => void;
+};
 
+export function IconModeSelector({ draftMode, onSelectDraft }: Props) {
   return (
     <View style={styles.wrap}>
       {OPTIONS.map((opt) => {
-        const active = iconDisplayMode === opt.mode;
+        const active = draftMode === opt.mode;
         return (
           <Pressable
             key={opt.mode}
             style={[styles.option, active && styles.optionActive]}
-            onPress={() => setIconDisplayMode(opt.mode)}
+            onPress={() => onSelectDraft(opt.mode)}
             accessibilityRole="radio"
             accessibilityState={{ selected: active }}
           >

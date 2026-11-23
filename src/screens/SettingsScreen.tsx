@@ -1,21 +1,55 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { IconModePreview } from '../components/IconModePreview';
 import { IconModeSelector } from '../components/IconModeSelector';
+import { usePreferences } from '../context/PreferencesContext';
 import { colors } from '../theme';
 
 export function SettingsScreen() {
+  const { iconDisplayMode, setIconDisplayMode, prefsLoading } = usePreferences();
+  const [draftMode, setDraftMode] = useState(iconDisplayMode);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setDraftMode(iconDisplayMode);
+  }, [iconDisplayMode]);
+
+  const dirty = draftMode !== iconDisplayMode;
+
+  const onSave = async () => {
+    setSaving(true);
+    try {
+      await setIconDisplayMode(draftMode);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Ajustes</Text>
         <Text style={styles.subtitle}>
           Elige cómo ves el icono en movimientos, historial, calendario y plan. En Cuentas siempre verás el
-          logo del banco.
+          logo del banco. Primero previsualiza y luego guarda.
         </Text>
 
         <Text style={styles.section}>Iconos en movimientos</Text>
-        <IconModeSelector />
+        {!prefsLoading ? (
+          <IconModePreview draftMode={draftMode} savedMode={iconDisplayMode} />
+        ) : null}
+        <IconModeSelector draftMode={draftMode} onSelectDraft={setDraftMode} />
+        <Pressable
+          style={[styles.saveBtn, (!dirty || saving) && styles.saveBtnDisabled]}
+          onPress={onSave}
+          disabled={!dirty || saving}
+        >
+          <Text style={styles.saveBtnText}>
+            {saving ? 'Guardando…' : dirty ? 'Guardar modo de iconos' : 'Modo guardado'}
+          </Text>
+        </Pressable>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Pagos recurrentes</Text>
@@ -46,4 +80,12 @@ const styles = StyleSheet.create({
   },
   cardTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   cardBody: { color: colors.textMuted, fontSize: 14, lineHeight: 20 },
+  saveBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  saveBtnDisabled: { opacity: 0.45 },
+  saveBtnText: { color: colors.white, fontWeight: '800', fontSize: 16 },
 });
