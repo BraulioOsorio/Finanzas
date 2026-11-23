@@ -12,9 +12,12 @@ type Props = {
   item: Transaction;
   onEdit?: () => void;
   onDelete?: () => void;
+  /** Compra a meses: crear plan de cuotas con un toque */
+  onCreatePlan?: () => void;
+  inInstallmentPlan?: boolean;
 };
 
-export function TransactionRow({ item, onEdit, onDelete }: Props) {
+export function TransactionRow({ item, onEdit, onDelete, onCreatePlan, inInstallmentPlan }: Props) {
   const { iconDisplayMode } = usePreferences();
   const isTransfer = item.kind === 'transfer';
   const isIncome = item.kind === 'income';
@@ -65,6 +68,13 @@ export function TransactionRow({ item, onEdit, onDelete }: Props) {
           {formatCurrency(displayAmount)}
         </Text>
         <View style={styles.actions}>
+          {inInstallmentPlan ? (
+            <Text style={styles.inPlan}>En Plan</Text>
+          ) : onCreatePlan ? (
+            <Pressable onPress={onCreatePlan} hitSlop={8} accessibilityRole="button">
+              <Text style={styles.plan}>Plan</Text>
+            </Pressable>
+          ) : null}
           {onEdit ? (
             <Pressable onPress={onEdit} hitSlop={8}>
               <Text style={styles.edit}>Editar</Text>
@@ -99,6 +109,8 @@ const styles = StyleSheet.create({
   trailing: { alignItems: 'flex-end', gap: 6 },
   actions: { flexDirection: 'row', gap: 10 },
   edit: { color: colors.accent, fontSize: 12 },
+  plan: { color: colors.accent, fontSize: 12, fontWeight: '800' },
+  inPlan: { color: colors.textMuted, fontSize: 11, fontWeight: '600' },
   amount: { fontSize: 15, fontWeight: '700' },
   income: { color: colors.income },
   expense: { color: colors.expense },

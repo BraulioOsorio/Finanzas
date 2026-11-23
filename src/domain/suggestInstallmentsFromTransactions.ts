@@ -65,8 +65,16 @@ function isCompraAMeses(t: Transaction): boolean {
   return t.nekoType.trim() === 'Compra a meses' && t.kind === 'expense';
 }
 
-function fingerprintFor(title: string, account: string, purchaseDate: string): string {
+export function installmentFingerprint(
+  title: string,
+  account: string,
+  purchaseDate: string,
+): string {
   return `${normalizeTitle(title)}|${account.trim().toLowerCase()}|${purchaseDate}`;
+}
+
+function fingerprintFor(title: string, account: string, purchaseDate: string): string {
+  return installmentFingerprint(title, account, purchaseDate);
 }
 
 function existingFingerprints(plans: InstallmentPlan[]): Set<string> {
@@ -75,6 +83,76 @@ function existingFingerprints(plans: InstallmentPlan[]): Set<string> {
       fingerprintFor(p.title, p.account, p.purchaseDate ?? p.startDate),
     ),
   );
+}
+
+export function hasInstallmentPlanForTransaction(
+  plans: InstallmentPlan[],
+  t: Transaction,
+): boolean {
+  const title = t.description.trim() || 'Compra a meses';
+  const fp = fingerprintFor(title, t.account, t.postedDate);
+  return existingFingerprints(plans).has(fp);
+}
+
+/** Un solo movimiento «Compra a meses» → borrador de plan (misma lógica que import masivo). */
+export function buildInstallmentSuggestionFromTransaction(
+  t: Transaction,
+  accounts: AccountDef[],
+): InstallmentSuggestion | null {
+  if (!isCompraAMeses(t)) {
+    return null;
+  }
+
+  const title = t.description.trim() || 'Compra a meses';
+  const purchaseDate = t.postedDate;
+  const fp = fingerprintFor(title, t.account, purchaseDate);
+
+  const meta =
+    t.installmentCountHint ??
+    parseInstallmentCountFromText(t.installmentMeta ?? '') ??
+    parseInstallmentCountFromText(t.notes) ??
+    parseInstallmentCountFromText(t.description) ??
+    parseInstallmentCountFromText(t.category);
+
+  const totalAmount = Math.round(t.purchaseTotal ?? t.amount);
+  const installmentCount = meta ?? guessInstallmentCount(totalAmount);
+  const needsCuotaReview = meta == null;
+  const initialPaidCount =
+    t.installmentCurrent && t.installmentCurrent > 0 ? t.installmentCurrent - 1 : undefined;
+
+  const def = accountDefByName(accounts, t.account);
+  const onCredit = def?.kind === 'credit' && Boolean(def.statementCloseDay);
+  const lag = def?.installmentStatementLagMonths ?? (onCredit ? 1 : 0);
+  const ea = def?.installmentInterestEA ?? def?.interestRateEA ?? 0;
+  const perInstallment = onCredit
+    ? estimateInstallmentWithInterest(totalAmount, installmentCount, ea)
+    : Math.round(totalAmount / installmentCount);
+
+  const reason = t.installmentCountHint
+    ? `CSV Finanzas: ${installmentCount} cuotas${t.installmentCurrent ? ` (va en ${t.installmentCurrent})` : ''}`
+    : meta
+      ? `Notas: ${installmentCount} cuotas`
+      : `Sin dato de cuotas · estimamos ${installmentCount}`;
+
+  return {
+    title,
+    totalAmount,
+    installmentCount,
+    perInstallment,
+    account: t.account.trim(),
+    categoryGroup: t.categoryGroup,
+    category: t.category,
+    startDate: purchaseDate,
+    purchaseDate,
+    billingMode: onCredit ? 'card_statement' : 'calendar',
+    statementLagMonths: lag,
+    active: true,
+    needsCuotaReview,
+    cuotaSource: t.installmentCountHint ? 'csv_exact' : meta ? 'csv_inferred' : 'csv_inferred',
+    initialPaidCount,
+    reason,
+    fingerprint: fp,
+  };
 }
 
 /**
@@ -96,64 +174,27 @@ export function suggestInstallmentsFromTransactions(
     .sort((a, b) => b.postedDate.localeCompare(a.postedDate));
 
   for (const t of compras) {
-    const title = t.description.trim() || 'Compra a meses';
     const purchaseDate = t.postedDate;
-    const fp = fingerprintFor(title, t.account, purchaseDate);
-    if (fps.has(fp) || seen.has(fp)) {
-      continue;
-    }
-
     if (purchaseDate < `${Number(today.slice(0, 4)) - 5}-01-01`) {
       continue;
     }
 
-    const meta =
-      t.installmentCountHint ??
-      parseInstallmentCountFromText(t.installmentMeta ?? '') ??
-      parseInstallmentCountFromText(t.notes) ??
-      parseInstallmentCountFromText(t.description) ??
-      parseInstallmentCountFromText(t.category);
+    const built = buildInstallmentSuggestionFromTransaction(t, accounts);
+    if (!built) {
+      continue;
+    }
+    if (fps.has(built.fingerprint) || seen.has(built.fingerprint)) {
+      continue;
+    }
 
-    const totalAmount = Math.round(t.purchaseTotal ?? t.amount);
-    const installmentCount = meta ?? guessInstallmentCount(totalAmount);
-    const needsCuotaReview = meta == null;
-    const initialPaidCount =
-      t.installmentCurrent && t.installmentCurrent > 0 ? t.installmentCurrent - 1 : undefined;
-
-    const def = accountDefByName(accounts, t.account);
-    const onCredit = def?.kind === 'credit' && Boolean(def.statementCloseDay);
-    const lag = def?.installmentStatementLagMonths ?? (onCredit ? 1 : 0);
-    const ea = def?.installmentInterestEA ?? def?.interestRateEA ?? 0;
-    const perInstallment = onCredit
-      ? estimateInstallmentWithInterest(totalAmount, installmentCount, ea)
-      : Math.round(totalAmount / installmentCount);
-
-    const reason = t.installmentCountHint
-      ? `CSV Finanzas: ${installmentCount} cuotas${t.installmentCurrent ? ` (va en ${t.installmentCurrent})` : ''}`
-      : meta
-        ? `Notas: ${installmentCount} cuotas`
-        : `Neko puro sin cuotas · estimamos ${installmentCount} · confirma en Plan`;
-
+    const bulkReason = built.needsCuotaReview
+      ? `Neko puro sin cuotas · estimamos ${built.installmentCount} · confirma en Plan`
+      : built.reason;
     suggestions.push({
-      title,
-      totalAmount,
-      installmentCount,
-      perInstallment,
-      account: t.account.trim(),
-      categoryGroup: t.categoryGroup,
-      category: t.category,
-      startDate: purchaseDate,
-      purchaseDate,
-      billingMode: onCredit ? 'card_statement' : 'calendar',
-      statementLagMonths: lag,
-      active: true,
-      needsCuotaReview,
-      cuotaSource: t.installmentCountHint ? 'csv_exact' : 'csv_inferred',
-      initialPaidCount,
-      reason,
-      fingerprint: fp,
+      ...built,
+      reason: built.needsCuotaReview ? bulkReason : built.reason,
     });
-    seen.add(fp);
+    seen.add(built.fingerprint);
   }
 
   return suggestions.slice(0, 40);

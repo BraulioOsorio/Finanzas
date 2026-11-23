@@ -20,12 +20,25 @@ import {
   distinctNekoTypes,
   filterTransactions,
 } from '../domain/historyFilters';
+import {
+  buildInstallmentSuggestionFromTransaction,
+  hasInstallmentPlanForTransaction,
+} from '../domain/suggestInstallmentsFromTransactions';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
 import type { Transaction } from '../types';
+import { formatCurrency } from '../utils/format';
 
 export function HistoryScreen() {
-  const { loading, transactions, removeTransaction, accountNames } = useTransactions();
+  const {
+    loading,
+    transactions,
+    removeTransaction,
+    accountNames,
+    accounts,
+    installmentPlans,
+    addInstallmentPlan,
+  } = useTransactions();
   const [filters, setFilters] = useState(EMPTY_HISTORY_FILTER);
   const [editing, setEditing] = useState<Transaction | null>(null);
 
@@ -38,6 +51,35 @@ export function HistoryScreen() {
     [nekoTypes],
   );
   const filtered = useMemo(() => filterTransactions(transactions, filters), [transactions, filters]);
+
+  const confirmCreatePlan = (item: Transaction) => {
+    const suggestion = buildInstallmentSuggestionFromTransaction(item, accounts);
+    if (!suggestion) {
+      return;
+    }
+    if (hasInstallmentPlanForTransaction(installmentPlans, item)) {
+      Alert.alert('Ya en Plan', 'Esta compra ya tiene un plan de cuotas en la pestaña Plan.');
+      return;
+    }
+    const { reason, fingerprint: _fp, ...draft } = suggestion;
+    Alert.alert(
+      'Crear plan de cuotas',
+      `${suggestion.title}\nTotal ~${formatCurrency(suggestion.totalAmount)} · ${suggestion.installmentCount} cuotas (~${formatCurrency(suggestion.perInstallment)} c/u)\n\n${reason}`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Crear plan',
+          onPress: async () => {
+            await addInstallmentPlan(draft);
+            const hint = suggestion.needsCuotaReview
+              ? ' Confirma el número de cuotas en Plan → Editar cuotas.'
+              : ' Revisa Calendario y Plan.';
+            Alert.alert('Listo', `Plan creado.${hint}`);
+          },
+        },
+      ],
+    );
+  };
 
   const confirmDelete = (id: string) => {
     Alert.alert('Eliminar movimiento', '¿Quieres borrar este registro?', [
@@ -160,13 +202,21 @@ export function HistoryScreen() {
               <Text style={styles.emptyBody}>Prueba otros filtros o registra un movimiento.</Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <TransactionRow
-              item={item}
-              onEdit={() => setEditing(item)}
-              onDelete={() => confirmDelete(item.id)}
-            />
-          )}
+          renderItem={({ item }) => {
+            const isCompra = item.nekoType.trim() === 'Compra a meses' && item.kind === 'expense';
+            const inPlan = isCompra && hasInstallmentPlanForTransaction(installmentPlans, item);
+            return (
+              <TransactionRow
+                item={item}
+                onEdit={() => setEditing(item)}
+                onDelete={() => confirmDelete(item.id)}
+                inInstallmentPlan={inPlan}
+                onCreatePlan={
+                  isCompra && !inPlan ? () => confirmCreatePlan(item) : undefined
+                }
+              />
+            );
+          }}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         />
       )}
