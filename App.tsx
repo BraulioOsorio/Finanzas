@@ -8,6 +8,7 @@ import { TransactionsProvider } from './src/context/TransactionsContext';
 import { AddScreen } from './src/screens/AddScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
+import { ImportScreen } from './src/screens/ImportScreen';
 import { colors } from './src/theme';
 
 const Tab = createBottomTabNavigator();
@@ -69,6 +70,13 @@ export default function App() {
               component={HistoryScreen}
               options={{
                 tabBarLabel: ({ focused }) => <TabLabel label="Historial" focused={focused} />,
+              }}
+            />
+            <Tab.Screen
+              name="Importar"
+              component={ImportScreen}
+              options={{
+                tabBarLabel: ({ focused }) => <TabLabel label="Importar" focused={focused} />,
               }}
             />
           </Tab.Navigator>

@@ -7,7 +7,8 @@ import { colors } from '../theme';
 import { formatCurrency } from '../utils/format';
 
 export function HomeScreen() {
-  const { loading, balance, totalIncome, totalExpense, transactions } = useTransactions();
+  const { loading, balance, totalIncome, totalExpense, transactions, transferCount } =
+    useTransactions();
   const recent = transactions.slice(0, 5);
 
   return (
@@ -23,6 +24,11 @@ export function HomeScreen() {
           ) : (
             <Text style={styles.balanceValue}>{formatCurrency(balance)}</Text>
           )}
+          {transferCount > 0 ? (
+            <Text style={styles.transferHint}>
+              {transferCount} transferencias internas (no suman al saldo)
+            </Text>
+          ) : null}
           <View style={styles.splitRow}>
             <View style={[styles.pill, styles.pillIncome]}>
               <Text style={styles.pillLabel}>Ingresos</Text>
@@ -78,6 +84,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     letterSpacing: -0.5,
   },
+  transferHint: { color: colors.textMuted, fontSize: 12, marginTop: 14, lineHeight: 16 },
   splitRow: { flexDirection: 'row', gap: 10, marginTop: 18 },
   pill: { flex: 1, borderRadius: 14, padding: 12 },
   pillIncome: { backgroundColor: colors.incomeMuted },

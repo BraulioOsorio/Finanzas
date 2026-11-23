@@ -8,17 +8,21 @@ import {
   type ReactNode,
 } from 'react';
 
+import { applyImport, parseNekoCsv } from '../import/parseNekoCsv';
 import { loadTransactions, saveTransactions } from '../storage/transactions';
-import type { Transaction, TransactionDraft } from '../types';
+import type { ImportResult, Transaction, TransactionDraft } from '../types';
 
 type TransactionsContextValue = {
   transactions: Transaction[];
   loading: boolean;
+  transactionCount: number;
   addTransaction: (draft: TransactionDraft) => Promise<void>;
   removeTransaction: (id: string) => Promise<void>;
+  importNekoCsv: (csv: string, mode: 'replace' | 'merge') => Promise<ImportResult>;
   balance: number;
   totalIncome: number;
   totalExpense: number;
+  transferCount: number;
 };
 
 const TransactionsContext = createContext<TransactionsContextValue | null>(null);
@@ -55,10 +59,12 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
 
   const addTransaction = useCallback(
     async (draft: TransactionDraft) => {
+      const now = new Date();
       const entry: Transaction = {
         ...draft,
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-        createdAt: new Date().toISOString(),
+        createdAt: now.toISOString(),
+        postedDate: draft.postedDate || now.toISOString().slice(0, 10),
       };
       await persist([entry, ...transactions]);
     },
@@ -72,37 +78,70 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [persist, transactions],
   );
 
-  const { totalIncome, totalExpense, balance } = useMemo(() => {
+  const importNekoCsv = useCallback(
+    async (csv: string, mode: 'replace' | 'merge'): Promise<ImportResult> => {
+      const { transactions: incoming, errors: parseErrors } = parseNekoCsv(csv);
+      if (incoming.length === 0 && parseErrors.length > 0) {
+        return { imported: 0, skipped: 0, errors: parseErrors };
+      }
+
+      const { next, result } = applyImport(transactions, incoming, mode);
+      await persist(next);
+      return {
+        imported: result.imported,
+        skipped: result.skipped,
+        errors: [...parseErrors, ...result.errors],
+      };
+    },
+    [persist, transactions],
+  );
+
+  const { totalIncome, totalExpense, balance, transferCount } = useMemo(() => {
     let income = 0;
     let expense = 0;
+    let transfers = 0;
     for (const t of transactions) {
-      if (t.type === 'income') {
+      if (t.kind === 'transfer') {
+        transfers += 1;
+        continue;
+      }
+      if (t.kind === 'income') {
         income += t.amount;
       } else {
         expense += t.amount;
       }
     }
-    return { totalIncome: income, totalExpense: expense, balance: income - expense };
+    return {
+      totalIncome: income,
+      totalExpense: expense,
+      balance: income - expense,
+      transferCount: transfers,
+    };
   }, [transactions]);
 
   const value = useMemo(
     () => ({
       transactions,
       loading,
+      transactionCount: transactions.length,
       addTransaction,
       removeTransaction,
+      importNekoCsv,
       balance,
       totalIncome,
       totalExpense,
+      transferCount,
     }),
     [
       transactions,
       loading,
       addTransaction,
       removeTransaction,
+      importNekoCsv,
       balance,
       totalIncome,
       totalExpense,
+      transferCount,
     ],
   );
 

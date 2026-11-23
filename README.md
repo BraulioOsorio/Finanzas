@@ -30,7 +30,16 @@ npm run web       # vista web (desarrollo)
 - Resumen: saldo, total ingresos y gastos
 - Registrar movimientos con categoría y nota
 - Historial con eliminación
+- **Importar CSV de Neko** (pestaña Importar): mismo formato que el export de la app Neko
+- Campos guardados: fecha, tipo, descripción, cuenta, grupo/categoría, notas
+- Las transferencias y pagos de tarjeta se listan pero **no mueven el saldo** (como en un libro mayor)
 - Datos guardados en el dispositivo (AsyncStorage)
+
+### Verificar un CSV (desarrollo)
+
+```bash
+npx tsx scripts/verify-neko-import.ts samples/neko_transactions_20261122_8537.csv
+```
 
 ## Publicar en tiendas
 

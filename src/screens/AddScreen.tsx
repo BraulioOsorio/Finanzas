@@ -39,11 +39,21 @@ export function AddScreen() {
     }
     setSaving(true);
     try {
+      const today = new Date().toISOString().slice(0, 10);
+      const signed = type === 'income' ? parsed : -parsed;
       await addTransaction({
+        kind: type,
         type,
         amount: parsed,
+        signedAmount: signed,
+        postedDate: today,
+        nekoType: type === 'income' ? 'Ingreso' : 'Gasto',
+        description: note.trim(),
+        account: 'Manual',
+        categoryGroup: '',
         category,
-        note: note.trim(),
+        notes: note.trim(),
+        source: 'manual',
       });
       setAmount('');
       setNote('');

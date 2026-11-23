@@ -10,21 +10,36 @@ type Props = {
 };
 
 export function TransactionRow({ item, onDelete }: Props) {
-  const isIncome = item.type === 'income';
-  const sign = isIncome ? '+' : '−';
+  const isTransfer = item.kind === 'transfer';
+  const isIncome = item.kind === 'income';
+  const sign = isTransfer ? (item.signedAmount >= 0 ? '+' : '−') : isIncome ? '+' : '−';
+  const displayAmount = isTransfer ? Math.abs(item.signedAmount) : item.amount;
+
+  const title = item.description || item.category || item.nekoType;
+  const metaParts = [item.account, item.nekoType, item.categoryGroup]
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const metaExtra = item.notes ? item.notes.split('\n')[0] : formatShortDate(item.postedDate);
 
   return (
     <View style={styles.row}>
       <View style={styles.leading}>
-        <Text style={styles.category}>{item.category}</Text>
-        <Text style={styles.meta} numberOfLines={1}>
-          {item.note ? item.note : formatShortDate(item.createdAt)}
+        <Text style={styles.category} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text style={styles.meta} numberOfLines={2}>
+          {metaParts.length ? `${metaParts.join(' · ')} · ${metaExtra}` : metaExtra}
         </Text>
       </View>
       <View style={styles.trailing}>
-        <Text style={[styles.amount, isIncome ? styles.income : styles.expense]}>
+        <Text
+          style={[
+            styles.amount,
+            isTransfer ? styles.transfer : isIncome ? styles.income : styles.expense,
+          ]}
+        >
           {sign}
-          {formatCurrency(item.amount)}
+          {formatCurrency(displayAmount)}
         </Text>
         {onDelete ? (
           <Pressable onPress={onDelete} hitSlop={8} accessibilityRole="button">
@@ -50,10 +65,11 @@ const styles = StyleSheet.create({
   },
   leading: { flex: 1 },
   category: { color: colors.text, fontSize: 16, fontWeight: '600' },
-  meta: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
+  meta: { color: colors.textMuted, fontSize: 12, marginTop: 4, lineHeight: 16 },
   trailing: { alignItems: 'flex-end', gap: 6 },
   amount: { fontSize: 15, fontWeight: '700' },
   income: { color: colors.income },
   expense: { color: colors.expense },
+  transfer: { color: '#94a3b8' },
   delete: { color: colors.textMuted, fontSize: 12 },
 });
