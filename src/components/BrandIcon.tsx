@@ -5,7 +5,16 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { BrandDef } from '../domain/brands/types';
 import { DEFAULT_BRAND } from '../domain/brands/brandCatalog';
 
-const DARK_TEXT_BRANDS = new Set(['bancolombia', 'exito', 'd1', 'mercadolibre', 'mcdonalds']);
+const DARK_TEXT_BRANDS = new Set([
+  'bancolombia',
+  'exito',
+  'd1',
+  'mercadolibre',
+  'mcdonalds',
+  'pichincha',
+  'homecenter',
+  'pricesmart',
+]);
 
 type Props = {
   brand?: BrandDef;

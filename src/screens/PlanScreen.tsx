@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BrandIcon } from '../components/BrandIcon';
+import { resolveBrandForScheduled } from '../domain/brands/resolveBrand';
 import { scheduleFrequencyLabel } from '../domain/scheduleProjection';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
@@ -197,8 +199,11 @@ export function PlanScreen() {
             </Text>
           </View>
         }
-        renderItem={({ item }) => (
+        renderItem={({ item }) => {
+          const brand = resolveBrandForScheduled(item);
+          return (
           <View style={styles.row}>
+            <BrandIcon brand={brand} size={42} />
             <View style={styles.rowMain}>
               <Text style={styles.rowTitle}>{item.title}</Text>
               <Text style={styles.rowMeta}>
@@ -224,7 +229,8 @@ export function PlanScreen() {
               </Pressable>
             </View>
           </View>
-        )}
+          );
+        }}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
       />
     </SafeAreaView>

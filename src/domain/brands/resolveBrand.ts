@@ -1,6 +1,6 @@
 import { BRANDS, DEFAULT_BRAND } from './brandCatalog';
 import type { BrandDef } from './types';
-import type { Transaction } from '../../types';
+import type { ScheduledPayment, Transaction } from '../../types';
 
 function normalize(text: string): string {
   return text
@@ -45,4 +45,8 @@ export function resolveBrandForTransaction(t: Transaction): BrandDef {
     t.nekoType,
     t.notes,
   );
+}
+
+export function resolveBrandForScheduled(p: ScheduledPayment): BrandDef {
+  return resolveBrandFromText(p.title, p.account, p.category, p.categoryGroup, p.nekoType);
 }
