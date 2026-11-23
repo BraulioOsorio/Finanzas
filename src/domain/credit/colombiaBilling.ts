@@ -89,16 +89,38 @@ export function statementPeriodForClose(closeIso: string, closeDay: number): {
   };
 }
 
+/** Vencimiento en calendario (sin ajuste a día hábil). */
+export function paymentDueCalendarFromClose(closeIso: string, account: AccountDef): string | undefined {
+  const closeDay = account.statementCloseDay;
+  if (!closeDay) {
+    return account.paymentDueDay
+      ? nextFixedCalendarDay(closeIso, account.paymentDueDay)
+      : undefined;
+  }
+
+  if (account.paymentDueOffsetDays && account.paymentDueOffsetDays > 0) {
+    const d = parseIso(closeIso);
+    d.setDate(d.getDate() + account.paymentDueOffsetDays);
+    return d.toISOString().slice(0, 10);
+  }
+
+  if (account.paymentDueDay) {
+    return dueDayAfterClose(closeIso, closeDay, account.paymentDueDay);
+  }
+
+  return undefined;
+}
+
 /**
- * Fecha límite de pago asociada a un corte.
- * Prioridad: `paymentDueOffsetDays` (días hábiles aproximados como gracia CO) o día fijo del mes.
+ * Fecha límite de pago asociada a un corte (con gracia en hábiles y ajuste CO).
  */
 export function paymentDueForStatementClose(closeIso: string, account: AccountDef): string | undefined {
   const closeDay = account.statementCloseDay;
   if (!closeDay) {
-    return account.paymentDueDay
-      ? shiftToColombiaBusinessDay(nextFixedCalendarDay(closeIso, account.paymentDueDay))
+    const cal = account.paymentDueDay
+      ? nextFixedCalendarDay(closeIso, account.paymentDueDay)
       : undefined;
+    return cal ? shiftToColombiaBusinessDay(cal) : undefined;
   }
 
   if (account.paymentDueOffsetDays && account.paymentDueOffsetDays > 0) {
@@ -106,11 +128,10 @@ export function paymentDueForStatementClose(closeIso: string, account: AccountDe
     return shiftToColombiaBusinessDay(due);
   }
 
-  if (account.paymentDueDay) {
-    return shiftToColombiaBusinessDay(dueDayAfterClose(closeIso, closeDay, account.paymentDueDay));
-  }
-
-  return undefined;
+  const cal = account.paymentDueDay
+    ? dueDayAfterClose(closeIso, closeDay, account.paymentDueDay)
+    : undefined;
+  return cal ? shiftToColombiaBusinessDay(cal) : undefined;
 }
 
 /** Primer día de pago fijo estrictamente después de `fromIso`. */

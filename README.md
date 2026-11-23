@@ -10,7 +10,9 @@ App móvil personal para registrar **ingresos y gastos**, ver **saldo** y consul
 
 ## Rama principal
 
-Todo el desarrollo NEKO/Finanzas vive en **`main`**.
+Todo el desarrollo NEKO/Finanzas vive en **`main`**. Estado resumido: [`docs/ESTADO-NEKO.md`](docs/ESTADO-NEKO.md).
+
+**¿Lista para probar?** Sí, con **Expo Go** en el teléfono (`npm install && npm start`). No hace falta APK para el núcleo NEKO. El widget de escritorio y algunas funciones de seguridad piden build nativo.
 
 ### Navegación (estilo NEKO)
 

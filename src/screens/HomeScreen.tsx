@@ -55,6 +55,7 @@ export function HomeScreen() {
   );
   const recent = transactions.slice(0, 5);
   const topAccounts = accountBalances.slice(0, 4);
+  const budgetsOver = budgetProgress.filter((p) => p.ratio > 1);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -84,6 +85,15 @@ export function HomeScreen() {
           snapshot={safeSnapshot}
           onClose={() => setDetailOpen(false)}
         />
+
+        {budgetsOver.length > 0 ? (
+          <View style={styles.overBudget}>
+            <Text style={styles.overBudgetTitle}>Presupuesto pasado</Text>
+            <Text style={styles.overBudgetBody}>
+              {budgetsOver.map((p) => p.label).join(' · ')}
+            </Text>
+          </View>
+        ) : null}
 
         <OverdraftAlertList items={overdraftAlerts} />
 
@@ -226,4 +236,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   emptyBody: { color: colors.textMuted, fontSize: 14, marginTop: 8, lineHeight: 20 },
+  overBudget: {
+    backgroundColor: colors.expenseMuted,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.expense,
+    gap: 4,
+  },
+  overBudgetTitle: { color: colors.expense, fontWeight: '800', fontSize: 14 },
+  overBudgetBody: { color: colors.text, fontSize: 13, lineHeight: 18 },
 });

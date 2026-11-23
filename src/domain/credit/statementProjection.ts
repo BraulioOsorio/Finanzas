@@ -3,6 +3,7 @@ import {
   estimateRevolvingInterest,
   isInPeriod,
   nextStatementClose,
+  paymentDueCalendarFromClose,
   paymentDueForStatementClose,
   roundMinimumPaymentCOP,
   statementPeriodForClose,
@@ -15,6 +16,8 @@ export type CardStatementOutlook = {
   account: string;
   nextClose: string;
   nextDue?: string;
+  /** true si el vencimiento se movió respecto al calendario simple (día hábil CO). */
+  dueOnBusinessDay?: boolean;
   periodStart: string;
   periodEnd: string;
   purchasesInPeriod: number;
@@ -115,7 +118,11 @@ export function cardStatementOutlook(
 
   const nextClose = nextStatementClose(today, closeDay);
   const { start, end } = statementPeriodForClose(nextClose, closeDay);
+  const nextDueCalendar = paymentDueCalendarFromClose(nextClose, account);
   const nextDue = paymentDueForStatementClose(nextClose, account);
+  const dueOnBusinessDay = Boolean(
+    nextDue && nextDueCalendar && nextDue !== nextDueCalendar,
+  );
 
   const purchases = expenseInPeriodOnAccount(transactions, account.name, start, end);
   const installments = installmentChargesForClose(installmentPlans, [account], nextClose);
@@ -140,6 +147,7 @@ export function cardStatementOutlook(
     account: account.name,
     nextClose,
     nextDue,
+    dueOnBusinessDay,
     periodStart: start,
     periodEnd: end,
     purchasesInPeriod: purchases,

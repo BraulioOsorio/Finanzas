@@ -94,6 +94,7 @@ export function buildUpcoming(
         outlook.estimatedInterestIfUnpaid > 0
           ? ` · interés si dejas saldo ~${outlook.estimatedInterestIfUnpaid.toLocaleString('es-CO')}`
           : '';
+      const bizHint = outlook.dueOnBusinessDay ? ' · fecha en día hábil' : '';
       out.push({
         id: `due-${outlook.account}-${outlook.nextDue}`,
         date: outlook.nextDue,
@@ -101,7 +102,7 @@ export function buildUpcoming(
         signedAmount: -useFull,
         account: outlook.account,
         kind: 'card_due',
-        subtitle: `Sin intereses (extracto) ~${payFull.toLocaleString('es-CO')} COP · mínimo ~${min.toLocaleString('es-CO')}${intHint}`,
+        subtitle: `Paga extracto ~${payFull.toLocaleString('es-CO')} COP · mínimo ~${min.toLocaleString('es-CO')}${intHint}${bizHint}`,
       });
     }
   }
