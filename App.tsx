@@ -39,6 +39,62 @@ function TabLabel({ label, focused }: { label: string; focused: boolean }) {
   );
 }
 
+function MainTabs() {
+  return (
+    <OnboardingGate>
+      <StatusBar style="light" />
+      <Tab.Navigator
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            height: 64,
+            paddingBottom: 8,
+            paddingTop: 8,
+          },
+        }}
+      >
+        <Tab.Screen
+          name="Inicio"
+          component={HomeScreen}
+          options={{
+            tabBarLabel: ({ focused }) => <TabLabel label="Inicio" focused={focused} />,
+          }}
+        />
+        <Tab.Screen
+          name="Calendario"
+          component={CalendarScreen}
+          options={{
+            tabBarLabel: ({ focused }) => <TabLabel label="Calendario" focused={focused} />,
+          }}
+        />
+        <Tab.Screen
+          name="Plan"
+          component={PlanScreen}
+          options={{
+            tabBarLabel: ({ focused }) => <TabLabel label="Plan" focused={focused} />,
+          }}
+        />
+        <Tab.Screen
+          name="Registrar"
+          component={AddScreen}
+          options={{
+            tabBarLabel: ({ focused }) => <TabLabel label="Registrar" focused={focused} />,
+          }}
+        />
+        <Tab.Screen
+          name="Más"
+          component={MoreStack}
+          options={{
+            tabBarLabel: ({ focused }) => <TabLabel label="Más" focused={focused} />,
+          }}
+        />
+      </Tab.Navigator>
+    </OnboardingGate>
+  );
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
@@ -47,59 +103,9 @@ export default function App() {
           <CreditReminderSync />
           <WidgetSnapshotSync />
           <AppLockGate>
-            <OnboardingGate>
-              <NavigationContainer theme={navTheme}>
-                <StatusBar style="light" />
-                <Tab.Navigator
-                  screenOptions={{
-                    headerShown: false,
-                    tabBarStyle: {
-                      backgroundColor: colors.surface,
-                      borderTopColor: colors.border,
-                      height: 64,
-                      paddingBottom: 8,
-                      paddingTop: 8,
-                    },
-                  }}
-                >
-                  <Tab.Screen
-                    name="Inicio"
-                    component={HomeScreen}
-                    options={{
-                      tabBarLabel: ({ focused }) => <TabLabel label="Inicio" focused={focused} />,
-                    }}
-                  />
-                  <Tab.Screen
-                    name="Calendario"
-                    component={CalendarScreen}
-                    options={{
-                      tabBarLabel: ({ focused }) => <TabLabel label="Calendario" focused={focused} />,
-                    }}
-                  />
-                  <Tab.Screen
-                    name="Plan"
-                    component={PlanScreen}
-                    options={{
-                      tabBarLabel: ({ focused }) => <TabLabel label="Plan" focused={focused} />,
-                    }}
-                  />
-                  <Tab.Screen
-                    name="Registrar"
-                    component={AddScreen}
-                    options={{
-                      tabBarLabel: ({ focused }) => <TabLabel label="Registrar" focused={focused} />,
-                    }}
-                  />
-                  <Tab.Screen
-                    name="Más"
-                    component={MoreStack}
-                    options={{
-                      tabBarLabel: ({ focused }) => <TabLabel label="Más" focused={focused} />,
-                    }}
-                  />
-                </Tab.Navigator>
-              </NavigationContainer>
-            </OnboardingGate>
+            <NavigationContainer theme={navTheme}>
+              <MainTabs />
+            </NavigationContainer>
           </AppLockGate>
         </TransactionsProvider>
       </PreferencesProvider>

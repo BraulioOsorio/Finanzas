@@ -1,5 +1,6 @@
 import type { AccountDef } from '../../types';
 import { addColombiaBusinessDays, shiftToColombiaBusinessDay } from './colombiaCalendar';
+import { parseIso } from './colombiaDates';
 
 /** IVA sobre servicios financieros (intereses), habitual en CO. */
 export const INTEREST_IVA_RATE = 0.19;
@@ -31,9 +32,7 @@ export function dayOfMonthClamped(year: number, monthIndex: number, day: number)
   return `${year}-${m}-${dd}`;
 }
 
-export function parseIso(iso: string): Date {
-  return new Date(`${iso}T12:00:00`);
-}
+export { parseIso } from './colombiaDates';
 
 export function addCalendarMonths(iso: string, months: number): string {
   const d = parseIso(iso);
