@@ -41,6 +41,9 @@ NEKO ([nekomoney.app](https://www.nekomoney.app/es)) es una app **cerrada** (iOS
 | Crear plan desde un movimiento | Historial → **Plan** en «Compra a meses» |
 | Pantalla **Deudas** (préstamos, amortización) | Pestaña Deudas; capital en cuenta tipo préstamo |
 | Recordatorio abono préstamo | Cuentas → día de abono + Ajustes → recordatorios |
+| Disponible para gastar (compromisos) | Inicio → chips de horizonte |
+| Alerta cuenta en negativo (futuro) | Inicio y Calendario |
+| Tabla amortización préstamo | Deudas → por cuenta |
 
 ## Qué NO está aún (premium / complejo en NEKO)
 

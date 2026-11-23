@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -5,9 +6,13 @@ import { AccountBalanceRow } from '../components/AccountBalanceRow';
 import { BudgetProgressList } from '../components/BudgetProgressList';
 import { CreditCardSummaryList } from '../components/CreditCardSummaryList';
 import { DebtSummaryList } from '../components/DebtSummaryList';
+import { OverdraftAlertList } from '../components/OverdraftAlertList';
+import { SafeToSpendCard } from '../components/SafeToSpendCard';
 import { TransactionRow } from '../components/TransactionRow';
 import { TodayAgenda } from '../components/TodayAgenda';
 import { UpcomingList } from '../components/UpcomingList';
+import { usePreferences } from '../context/PreferencesContext';
+import { computeSafeToSpend } from '../domain/safeToSpend';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
 import { formatCurrency } from '../utils/format';
@@ -25,9 +30,16 @@ export function HomeScreen() {
     debtSummaries,
     monthFlow,
     upcomingItems,
+    overdraftAlerts,
     todayAgenda,
     tomorrowHeadline,
+    accounts,
   } = useTransactions();
+  const { safeToSpendHorizon, setSafeToSpendHorizon } = usePreferences();
+  const safeSnapshot = useMemo(
+    () => computeSafeToSpend(safeToSpendHorizon, accounts, accountBalances, upcomingItems),
+    [safeToSpendHorizon, accounts, accountBalances, upcomingItems],
+  );
   const recent = transactions.slice(0, 5);
   const topAccounts = accountBalances.slice(0, 4);
 
@@ -39,15 +51,24 @@ export function HomeScreen() {
 
         <TodayAgenda items={todayAgenda} tomorrow={tomorrowHeadline} />
 
+        <SafeToSpendCard
+          snapshot={safeSnapshot}
+          horizon={safeToSpendHorizon}
+          onHorizon={(h) => void setSafeToSpendHorizon(h)}
+          loading={loading}
+        />
+
+        <OverdraftAlertList items={overdraftAlerts} />
+
         <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Disponible para gastar</Text>
+          <Text style={styles.balanceLabel}>Saldo líquido (sin compromisos)</Text>
           {loading ? (
             <ActivityIndicator color={colors.accent} style={{ marginTop: 12 }} />
           ) : (
             <Text style={styles.balanceValue}>{formatCurrency(liquidAvailable)}</Text>
           )}
           <Text style={styles.balanceHint}>
-            Cuentas líquidas; excluye deudas y tarjetas. Total en todas las cuentas:{' '}
+            Solo cuentas marcadas como líquidas. Total en todas las cuentas:{' '}
             {formatCurrency(totalInAccounts)}
           </Text>
 

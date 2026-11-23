@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OverdraftAlertList } from '../components/OverdraftAlertList';
 import { TransactionRow } from '../components/TransactionRow';
 import {
   buildMonthCalendar,
@@ -28,8 +29,15 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 }
 
 export function CalendarScreen() {
-  const { transactions, accountNames, scheduledPayments, installmentPlans, accounts, budgetProgress } =
-    useTransactions();
+  const {
+    transactions,
+    accountNames,
+    scheduledPayments,
+    installmentPlans,
+    accounts,
+    budgetProgress,
+    overdraftAlerts,
+  } = useTransactions();
   const [monthKey, setMonthKey] = useState(monthKeyFromDate(new Date()));
   const [accountFilter, setAccountFilter] = useState<string | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -65,8 +73,17 @@ export function CalendarScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Calendario</Text>
         <Text style={styles.subtitle}>
-          Saldo al cierre de cada día. Los días futuros incluyen tu Plan (quincena, pagos fijos).
+          Saldo al cierre de cada día. Filtra por cuenta. Los días futuros incluyen tu Plan.
         </Text>
+
+        <OverdraftAlertList
+          items={
+            accountFilter
+              ? overdraftAlerts.filter((a) => a.account === accountFilter)
+              : overdraftAlerts
+          }
+          title="Cuenta en riesgo"
+        />
 
         <View style={styles.monthRow}>
           <Pressable style={styles.monthBtn} onPress={() => setMonthKey((m) => shiftMonth(m, -1))}>

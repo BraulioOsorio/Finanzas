@@ -6,7 +6,9 @@ import { AccountEditorModal } from '../components/AccountEditorModal';
 import { TransactionRow } from '../components/TransactionRow';
 import { accountDefByName } from '../domain/accounts/resolveAccounts';
 import { loanActivities, paymentsThisMonth } from '../domain/debts/loanLedger';
+import { buildLoanAmortization } from '../domain/debts/amortization';
 import { debtBucketSummaries, totalDebtOwed } from '../domain/debtSummary';
+import { LoanAmortizationBlock } from '../components/LoanAmortizationBlock';
 import { distinctMonthKeys } from '../domain/historyFilters';
 import { computeAccountBalances, currentMonthKey } from '../domain/summaries';
 import { useTransactions } from '../context/TransactionsContext';
@@ -103,7 +105,9 @@ export function DeudasScreen() {
               ))}
             </View>
 
-            {summaries.map((d) => (
+            {summaries.map((d) => {
+              const amort = buildLoanAmortization(d.account, accounts, transactions, d.balance);
+              return (
               <Pressable key={d.account} style={styles.bucketCard} onPress={() => openEdit(d.account)}>
                 <View style={styles.bucketHead}>
                   <Text style={styles.bucketName}>{d.account}</Text>
@@ -134,8 +138,10 @@ export function DeudasScreen() {
                     Añade «Capital del préstamo» al editar la cuenta para ver progreso.
                   </Text>
                 )}
+                <LoanAmortizationBlock plan={amort} />
               </Pressable>
-            ))}
+            );
+            })}
 
             <Text style={styles.sectionTitle}>Movimientos ({monthKey})</Text>
           </View>

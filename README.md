@@ -31,7 +31,7 @@ El modelo de datos y pantallas siguen la lógica de **[NEKO: Control de Gastos](
 
 ## Funciones actuales
 
-- Inicio al estilo NEKO: disponible aproximado, flujo del mes, cuentas principales
+- Inicio al estilo NEKO: **Disponible para gastar v2** (hoy / fin de mes / 14 días, menos compromisos del Plan), alertas de sobregiro, flujo del mes
 - Pestaña **Plan**: quincena, arriendo, suscripciones (mensual / quincenal / semanal)
 - Pestaña **Calendario**: saldo por día + proyección futura según el Plan
 - Pestaña **Cuentas**: saldo por cuenta según movimientos

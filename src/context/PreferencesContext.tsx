@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 
+import type { SafeToSpendHorizon } from '../domain/safeToSpend';
 import type { IconDisplayMode } from '../types';
 import {
   loadPreferences,
@@ -22,6 +23,8 @@ type PreferencesContextValue = {
   completeOnboarding: () => Promise<void>;
   creditRemindersEnabled: boolean;
   setCreditRemindersEnabled: (enabled: boolean) => Promise<void>;
+  safeToSpendHorizon: SafeToSpendHorizon;
+  setSafeToSpendHorizon: (horizon: SafeToSpendHorizon) => Promise<void>;
   prefsLoading: boolean;
 };
 
@@ -31,6 +34,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [iconDisplayMode, setIconDisplayModeState] = useState<IconDisplayMode>('category');
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [creditRemindersEnabled, setCreditRemindersEnabledState] = useState(false);
+  const [safeToSpendHorizon, setSafeToSpendHorizonState] = useState<SafeToSpendHorizon>('month_end');
   const [prefsLoading, setPrefsLoading] = useState(true);
 
   useEffect(() => {
@@ -41,6 +45,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         setIconDisplayModeState(prefs.iconDisplayMode);
         setOnboardingComplete(prefs.onboardingComplete);
         setCreditRemindersEnabledState(prefs.creditRemindersEnabled);
+        setSafeToSpendHorizonState(prefs.safeToSpendHorizon);
         setPrefsLoading(false);
       }
     })();
@@ -55,10 +60,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         iconDisplayMode,
         onboardingComplete,
         creditRemindersEnabled,
+        safeToSpendHorizon,
         ...patch,
       });
     },
-    [iconDisplayMode, onboardingComplete, creditRemindersEnabled],
+    [iconDisplayMode, onboardingComplete, creditRemindersEnabled, safeToSpendHorizon],
   );
 
   const setIconDisplayMode = useCallback(
@@ -82,6 +88,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     [persist],
   );
 
+  const setSafeToSpendHorizon = useCallback(
+    async (horizon: SafeToSpendHorizon) => {
+      setSafeToSpendHorizonState(horizon);
+      await persist({ safeToSpendHorizon: horizon });
+    },
+    [persist],
+  );
+
   const value = useMemo(
     () => ({
       iconDisplayMode,
@@ -90,6 +104,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       completeOnboarding,
       creditRemindersEnabled,
       setCreditRemindersEnabled,
+      safeToSpendHorizon,
+      setSafeToSpendHorizon,
       prefsLoading,
     }),
     [
@@ -99,6 +115,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       completeOnboarding,
       creditRemindersEnabled,
       setCreditRemindersEnabled,
+      safeToSpendHorizon,
+      setSafeToSpendHorizon,
       prefsLoading,
     ],
   );

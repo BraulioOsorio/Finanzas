@@ -32,6 +32,7 @@ import { loadBudgets, saveBudgets } from '../storage/budgets';
 import { loadCategoryTree, saveCategoryTree, type CategoryTree } from '../storage/categoryTree';
 import { applyImport, parseNekoCsv } from '../import/parseNekoCsv';
 import { buildTodayAgenda, buildTomorrowHeadline } from '../domain/today';
+import { findOverdraftAlerts, type OverdraftAlert } from '../domain/overdraftAlerts';
 import { buildUpcoming, type UpcomingItem } from '../domain/upcoming';
 import { loadInstallmentPlans, saveInstallmentPlans } from '../storage/installments';
 import { loadScheduledPayments, saveScheduledPayments } from '../storage/scheduled';
@@ -102,6 +103,7 @@ type TransactionsContextValue = {
   toggleInstallmentPlan: (id: string, active: boolean) => Promise<void>;
   updateInstallmentPlan: (id: string, update: InstallmentPlanUpdate) => Promise<void>;
   upcomingItems: UpcomingItem[];
+  overdraftAlerts: OverdraftAlert[];
   todayAgenda: ReturnType<typeof buildTodayAgenda>;
   tomorrowHeadline: UpcomingItem[];
   addInstallmentPlansBatch: (drafts: InstallmentPlanDraft[]) => Promise<number>;
@@ -486,6 +488,11 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [scheduledPayments, installmentPlans, accounts, transactions],
   );
 
+  const overdraftAlerts = useMemo(
+    () => findOverdraftAlerts(transactions, accounts, scheduledPayments, installmentPlans),
+    [transactions, accounts, scheduledPayments, installmentPlans],
+  );
+
   const todayAgenda = useMemo(
     () => buildTodayAgenda(transactions, upcomingItems),
     [transactions, upcomingItems],
@@ -624,6 +631,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       toggleInstallmentPlan,
       updateInstallmentPlan,
       upcomingItems,
+      overdraftAlerts,
       todayAgenda,
       tomorrowHeadline,
       addInstallmentPlansBatch,
@@ -669,6 +677,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       toggleInstallmentPlan,
       updateInstallmentPlan,
       upcomingItems,
+      overdraftAlerts,
       todayAgenda,
       tomorrowHeadline,
       addInstallmentPlansBatch,
