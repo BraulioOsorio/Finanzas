@@ -14,6 +14,7 @@ import {
 
 import { NEKO_TRANSACTION_TYPES } from '../domain/nekoCatalog';
 import { useNekoCatalog } from '../hooks/useNekoCatalog';
+import { parseInstallmentMetaCell } from '../import/installmentMeta';
 import { classifyNekoType } from '../import/nekoMapping';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
@@ -37,8 +38,12 @@ export function TransactionEditModal({ visible, transaction, onClose }: Props) {
   const [notes, setNotes] = useState('');
   const [postedDate, setPostedDate] = useState('');
   const [saving, setSaving] = useState(false);
+  const [installmentMeta, setInstallmentMeta] = useState('');
+  const [purchaseTotal, setPurchaseTotal] = useState('');
+  const [installmentCurrent, setInstallmentCurrent] = useState('');
 
   const kind = classifyNekoType(nekoType);
+  const isInstallment = nekoType === 'Compra a meses';
   const categories = useMemo(
     () => categoriesForGroup(categoryGroup),
     [categoryGroup, categoriesForGroup],
@@ -58,7 +63,12 @@ export function TransactionEditModal({ visible, transaction, onClose }: Props) {
     setDescription(transaction.description);
     setNotes(transaction.notes);
     setPostedDate(transaction.postedDate);
-  }, [transaction, visible]);
+    setInstallmentMeta(transaction.installmentMeta ?? '');
+    setPurchaseTotal(transaction.purchaseTotal ? String(transaction.purchaseTotal) : '');
+    setInstallmentCurrent(
+      transaction.installmentCurrent ? String(transaction.installmentCurrent) : '',
+    );
+  }, [transaction, visible, UNCATEGORIZED_GROUP]);
 
   const onChangeGroup = (group: string) => {
     setCategoryGroup(group);
@@ -83,11 +93,23 @@ export function TransactionEditModal({ visible, transaction, onClose }: Props) {
     const group =
       categoryGroup === UNCATEGORIZED_GROUP || categoryGroup === 'Sin grupo' ? '' : categoryGroup;
 
+    const resolvedKind = classifyNekoType(nekoType);
+    const type = resolvedKind === 'income' ? 'income' : 'expense';
+    let signedAmount =
+      resolvedKind === 'income' ? parsed : resolvedKind === 'transfer' ? transaction.signedAmount : -parsed;
+    if (resolvedKind === 'transfer') {
+      signedAmount = Math.sign(transaction.signedAmount || -1) * parsed;
+    }
+
+    const metaParsed = installmentMeta.trim() ? parseInstallmentMetaCell(installmentMeta) : {};
+    const purchase = Number(purchaseTotal.replace(/[^\d]/g, ''));
+    const current = Number(installmentCurrent.replace(/\D/g, ''));
+
     const update: TransactionUpdate = {
-      kind: transaction.kind,
-      type: transaction.type,
+      kind: resolvedKind,
+      type,
       amount: parsed,
-      signedAmount: transaction.signedAmount,
+      signedAmount,
       postedDate,
       nekoType,
       description: description.trim(),
@@ -95,6 +117,10 @@ export function TransactionEditModal({ visible, transaction, onClose }: Props) {
       categoryGroup: group,
       category: category || nekoType,
       notes: notes.trim(),
+      installmentMeta: installmentMeta.trim() || undefined,
+      purchaseTotal: purchase > 0 ? purchase : undefined,
+      installmentCurrent: current > 0 ? current : metaParsed.installmentCurrent,
+      installmentCountHint: metaParsed.installmentCount,
     };
 
     setSaving(true);
@@ -217,6 +243,39 @@ export function TransactionEditModal({ visible, transaction, onClose }: Props) {
             placeholderTextColor={colors.textMuted}
           />
 
+          {isInstallment ? (
+            <View style={styles.installmentBlock}>
+              <Text style={styles.installmentTitle}>Cuotas (export / importación)</Text>
+              <Text style={styles.installmentHint}>
+                Ej. meta 2/6, total compra y cuota actual — igual que columnas extendidas del CSV.
+              </Text>
+              <Text style={styles.label}>Meta (2/6 o 12 cuotas)</Text>
+              <TextInput
+                style={styles.input}
+                value={installmentMeta}
+                onChangeText={setInstallmentMeta}
+                placeholder="2/6"
+                placeholderTextColor={colors.textMuted}
+              />
+              <Text style={styles.label}>Total compra (COP)</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="number-pad"
+                value={purchaseTotal}
+                onChangeText={setPurchaseTotal}
+                placeholderTextColor={colors.textMuted}
+              />
+              <Text style={styles.label}>Cuota actual (número)</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="number-pad"
+                value={installmentCurrent}
+                onChangeText={setInstallmentCurrent}
+                placeholderTextColor={colors.textMuted}
+              />
+            </View>
+          ) : null}
+
           <Pressable style={[styles.save, saving && styles.saveDisabled]} onPress={onSave} disabled={saving}>
             <Text style={styles.saveText}>{saving ? 'Guardando…' : 'Guardar cambios'}</Text>
           </Pressable>
@@ -272,4 +331,15 @@ const styles = StyleSheet.create({
   },
   saveDisabled: { opacity: 0.6 },
   saveText: { color: colors.white, fontWeight: '800', fontSize: 16 },
+  installmentBlock: {
+    marginTop: 8,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 8,
+  },
+  installmentTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  installmentHint: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
 });

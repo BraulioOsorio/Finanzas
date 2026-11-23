@@ -11,6 +11,7 @@ import { CalendarScreen } from './src/screens/CalendarScreen';
 import { AddScreen } from './src/screens/AddScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
+import { InformeScreen } from './src/screens/InformeScreen';
 import { ImportScreen } from './src/screens/ImportScreen';
 import { PlanScreen } from './src/screens/PlanScreen';
 import { CategoriesScreen } from './src/screens/CategoriesScreen';
@@ -67,6 +68,13 @@ export default function App() {
               component={HomeScreen}
               options={{
                 tabBarLabel: ({ focused }) => <TabLabel label="Inicio" focused={focused} />,
+              }}
+            />
+            <Tab.Screen
+              name="Informe"
+              component={InformeScreen}
+              options={{
+                tabBarLabel: ({ focused }) => <TabLabel label="Informe" focused={focused} />,
               }}
             />
             <Tab.Screen

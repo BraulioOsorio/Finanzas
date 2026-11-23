@@ -11,6 +11,7 @@ import {
   shiftMonth,
   type DaySnapshot,
 } from '../domain/calendar';
+import { budgetsTouchedByTransactions } from '../domain/calendarBudgets';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
 import { formatCurrency, formatShortDate } from '../utils/format';
@@ -27,7 +28,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 }
 
 export function CalendarScreen() {
-  const { transactions, accountNames, scheduledPayments, installmentPlans, accounts } =
+  const { transactions, accountNames, scheduledPayments, installmentPlans, accounts, budgetProgress } =
     useTransactions();
   const [monthKey, setMonthKey] = useState(monthKeyFromDate(new Date()));
   const [accountFilter, setAccountFilter] = useState<string | undefined>(undefined);
@@ -47,6 +48,8 @@ export function CalendarScreen() {
   );
 
   const selected = selectedDate ? days.find((d) => d.date === selectedDate) : undefined;
+  const budgetAlerts =
+    selected != null ? budgetsTouchedByTransactions(selected.transactions, budgetProgress) : [];
   const todayIso = new Date().toISOString().slice(0, 10);
 
   const cells: (DaySnapshot | null)[] = [
@@ -193,6 +196,17 @@ export function CalendarScreen() {
                 Saldo: {formatCurrency(selected.balance)}
                 {selected.date >= todayIso ? ' (con proyección)' : ''}
               </Text>
+              {budgetAlerts.length > 0 ? (
+                <View style={styles.scheduledBlock}>
+                  <Text style={styles.scheduledTitle}>Presupuesto</Text>
+                  {budgetAlerts.map((b) => (
+                    <Text key={b.budget.id} style={styles.budgetWarn}>
+                      {b.label}: {Math.round(b.ratio * 100)}% del mes ({formatCurrency(b.spent)} /{' '}
+                      {formatCurrency(b.limit)})
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
               {selected.scheduled.length > 0 ? (
                 <View style={styles.scheduledBlock}>
                   <Text style={styles.scheduledTitle}>Programado</Text>
@@ -305,6 +319,7 @@ const styles = StyleSheet.create({
   scheduledBlock: { gap: 4, marginTop: 4 },
   scheduledTitle: { color: colors.accent, fontSize: 13, fontWeight: '700' },
   scheduledLine: { color: colors.textMuted, fontSize: 13 },
+  budgetWarn: { color: colors.expense, fontSize: 12, lineHeight: 17 },
   dotCount: { color: colors.textMuted, fontSize: 9, fontWeight: '700' },
   detailCard: {
     marginTop: 12,

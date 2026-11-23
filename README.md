@@ -46,6 +46,8 @@ El modelo de datos y pantallas siguen la lógica de **[NEKO: Control de Gastos](
 - **Hoy** en Inicio; recordatorios locales de tarjeta en Ajustes
 - **CSV extendido** (opcional): columnas `Installment Meta`, `Purchase Total` — [`docs/NEKO-CSV-EXTENDED.md`](docs/NEKO-CSV-EXTENDED.md)
 - **Deudas y préstamos** en Inicio; historial con filtro por tipo Neko
+- Pestaña **Informe**: patrimonio, flujo del mes, top categorías y presupuestos
+- **Calendario**: avisos de presupuesto al pulsar un día
 - Campos guardados: fecha, tipo, descripción, cuenta, grupo/categoría, notas
 - Las transferencias y pagos de tarjeta se listan pero **no mueven el saldo** (como en un libro mayor)
 - **Iconos configurables** en Ajustes: categoría Neko (default), comercio por descripción, o banco/cuenta; pestaña Cuentas siempre muestra el banco
