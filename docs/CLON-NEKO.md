@@ -8,7 +8,8 @@ Misma **experiencia** que NEKO 8.8.2 (navegación, números, SQLite), con **cód
 
 | Fuente | Uso |
 |--------|-----|
-| APK `Neko-8.8.2.apk` | Assets Flutter empaquetados, manifiesto Android |
+| APK **completo** (base + splits ABI) | `libapp.so` para blutter; ver [`INGENIERIA-INVERSA-NEKO.md`](./INGENIERIA-INVERSA-NEKO.md) |
+| APK base solo | Assets + jadx (plugins), **sin** lógica Dart |
 | Backup **Neko - My Data** | Esquema SQLite y datos de prueba |
 | Capturas / tu uso diario | Validación UI |
 
