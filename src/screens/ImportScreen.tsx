@@ -12,13 +12,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { suggestRecurringFromTransactions } from '../domain/suggestRecurringFromTransactions';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
 
 const NEKO_FORMAT = `Posted Date,Transaction Type,Description,Amount,Account,Category Group,Category,Notes`;
 
 export function ImportScreen() {
-  const { importNekoCsv, transactionCount } = useTransactions();
+  const {
+    importNekoCsv,
+    transactionCount,
+    transactions,
+    scheduledPayments,
+    addScheduledPayment,
+  } = useTransactions();
   const [busy, setBusy] = useState(false);
 
   const runImport = async (csv: string, mode: 'replace' | 'merge') => {
@@ -40,11 +47,45 @@ export function ImportScreen() {
           .filter(Boolean)
           .join('\n'),
       );
+
+      if (result.imported > 0) {
+        offerPlanSuggestions(result.transactionsAfter);
+      }
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'No se pudo importar el archivo.');
     } finally {
       setBusy(false);
     }
+  };
+
+  const offerPlanSuggestions = (source: typeof transactions = transactions) => {
+    const plannedTitles = new Set(scheduledPayments.map((p) => p.title.toLowerCase()));
+    const suggestions = suggestRecurringFromTransactions(source).filter(
+      (s) => !plannedTitles.has(s.title.toLowerCase()),
+    );
+    if (!suggestions.length) {
+      return;
+    }
+    const preview = suggestions
+      .slice(0, 5)
+      .map((s) => `• ${s.title} (${s.frequency}, ${s.reason})`)
+      .join('\n');
+  Alert.alert(
+      '¿Añadir al Plan?',
+      `Detectamos posibles pagos recurrentes:\n\n${preview}${suggestions.length > 5 ? `\n… y ${suggestions.length - 5} más` : ''}`,
+      [
+        { text: 'Ahora no', style: 'cancel' },
+        {
+          text: 'Añadir al Plan',
+          onPress: async () => {
+            for (const { reason: _r, ...draft } of suggestions) {
+              await addScheduledPayment(draft);
+            }
+            Alert.alert('Listo', `${suggestions.length} ítems en la pestaña Plan.`);
+          },
+        },
+      ],
+    );
   };
 
   const pickFile = async (mode: 'replace' | 'merge') => {
@@ -113,6 +154,14 @@ export function ImportScreen() {
           disabled={busy}
         >
           <Text style={styles.buttonSecondaryText}>Elegir CSV y combinar (sin duplicar)</Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.button, styles.buttonSecondary]}
+          onPress={() => offerPlanSuggestions()}
+          disabled={busy || transactionCount === 0}
+        >
+          <Text style={styles.buttonSecondaryText}>Sugerir recurrentes al Plan (desde historial)</Text>
         </Pressable>
 
         <Text style={styles.footer}>

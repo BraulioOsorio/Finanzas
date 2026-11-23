@@ -10,10 +10,11 @@ import { formatCurrency, formatShortDate } from '../utils/format';
 
 type Props = {
   item: Transaction;
+  onEdit?: () => void;
   onDelete?: () => void;
 };
 
-export function TransactionRow({ item, onDelete }: Props) {
+export function TransactionRow({ item, onEdit, onDelete }: Props) {
   const { iconDisplayMode } = usePreferences();
   const isTransfer = item.kind === 'transfer';
   const isIncome = item.kind === 'income';
@@ -28,7 +29,12 @@ export function TransactionRow({ item, onDelete }: Props) {
     : formatShortDate(item.postedDate);
 
   return (
-    <View style={styles.row}>
+    <Pressable
+      style={styles.row}
+      onPress={onEdit}
+      disabled={!onEdit}
+      accessibilityRole={onEdit ? 'button' : 'none'}
+    >
       <BrandIcon brand={brand} size={42} />
       <View style={styles.leading}>
         <Text style={styles.category} numberOfLines={1}>
@@ -48,13 +54,20 @@ export function TransactionRow({ item, onDelete }: Props) {
           {sign}
           {formatCurrency(displayAmount)}
         </Text>
-        {onDelete ? (
-          <Pressable onPress={onDelete} hitSlop={8} accessibilityRole="button">
-            <Text style={styles.delete}>Eliminar</Text>
-          </Pressable>
-        ) : null}
+        <View style={styles.actions}>
+          {onEdit ? (
+            <Pressable onPress={onEdit} hitSlop={8}>
+              <Text style={styles.edit}>Editar</Text>
+            </Pressable>
+          ) : null}
+          {onDelete ? (
+            <Pressable onPress={onDelete} hitSlop={8} accessibilityRole="button">
+              <Text style={styles.delete}>Eliminar</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -74,6 +87,8 @@ const styles = StyleSheet.create({
   category: { color: colors.text, fontSize: 16, fontWeight: '600' },
   meta: { color: colors.textMuted, fontSize: 12, marginTop: 4, lineHeight: 16 },
   trailing: { alignItems: 'flex-end', gap: 6 },
+  actions: { flexDirection: 'row', gap: 10 },
+  edit: { color: colors.accent, fontSize: 12 },
   amount: { fontSize: 15, fontWeight: '700' },
   income: { color: colors.income },
   expense: { color: colors.expense },

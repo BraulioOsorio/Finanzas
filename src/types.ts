@@ -30,6 +30,11 @@ export type Transaction = {
 
 export type TransactionDraft = Omit<Transaction, 'id' | 'createdAt'>;
 
+/** Actualización de un movimiento existente (id y createdAt no cambian). */
+export type TransactionUpdate = Omit<TransactionDraft, 'source'> & {
+  source?: TransactionSource;
+};
+
 export type NekoCsvRow = {
   postedDate: string;
   transactionType: string;
@@ -45,6 +50,8 @@ export type ImportResult = {
   imported: number;
   skipped: number;
   errors: string[];
+  /** Historial tras la importación (para sugerencias de Plan, etc.) */
+  transactionsAfter: Transaction[];
 };
 
 export type ScheduleFrequency = 'once' | 'weekly' | 'biweekly' | 'monthly';

@@ -28,7 +28,7 @@ import type { ScheduleFrequency, TransactionKind } from '../types';
 const RECURRENCE_FREQUENCIES: ScheduleFrequency[] = ['monthly', 'biweekly', 'weekly', 'once'];
 
 export function AddScreen() {
-  const { addTransaction, addScheduledPayment, accountNames } = useTransactions();
+  const { addTransaction, addScheduledPayment, addTransferPair, accountNames } = useTransactions();
   const [nekoType, setNekoType] = useState<string>('Gasto');
   const [account, setAccount] = useState(accountNames[0] ?? 'Efectivo');
   const [categoryGroup, setCategoryGroup] = useState('Comida y Bebida');
@@ -40,6 +40,10 @@ export function AddScreen() {
   const [repeatEnabled, setRepeatEnabled] = useState(false);
   const [repeatFrequency, setRepeatFrequency] = useState<ScheduleFrequency>('monthly');
   const [repeatStartDate, setRepeatStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [transferToAccount, setTransferToAccount] = useState(
+    accountNames[1] ?? accountNames[0] ?? 'Ahorro',
+  );
+  const [transferPair, setTransferPair] = useState(true);
 
   const kind: TransactionKind = classifyNekoType(nekoType);
   const categories = useMemo(() => categoriesForGroup(categoryGroup), [categoryGroup]);
@@ -58,6 +62,7 @@ export function AddScreen() {
     } else if (type === 'Transferencia' || type === 'Pago de Tarjeta') {
       setCategoryGroup(UNCATEGORIZED_GROUP);
       setCategory('');
+      setTransferPair(type === 'Transferencia');
     }
   };
 
@@ -77,15 +82,39 @@ export function AddScreen() {
       return;
     }
 
-    const signed =
-      kind === 'income' ? parsed : kind === 'transfer' ? -parsed : -parsed;
     const type = kind === 'income' ? 'income' : 'expense';
     const today = new Date().toISOString().slice(0, 10);
+
+    if (nekoType === 'Transferencia' && transferPair) {
+      if (account === transferToAccount) {
+        Alert.alert('Transferencia', 'Elige dos cuentas distintas.');
+        return;
+      }
+    }
 
     setSaving(true);
     try {
       const group = categoryGroup === UNCATEGORIZED_GROUP ? '' : categoryGroup;
       const cat = category || nekoType;
+
+      if (nekoType === 'Transferencia' && transferPair) {
+        await addTransferPair({
+          amount: parsed,
+          postedDate: today,
+          description: description.trim() || 'Transferencia',
+          notes: notes.trim(),
+          fromAccount: account,
+          toAccount: transferToAccount,
+        });
+        setAmount('');
+        setDescription('');
+        setNotes('');
+        Alert.alert('Listo', 'Transferencia registrada en las dos cuentas.');
+        return;
+      }
+
+      const signed =
+        kind === 'income' ? parsed : kind === 'transfer' ? -parsed : -parsed;
 
       await addTransaction({
         kind,
@@ -231,10 +260,51 @@ export function AddScreen() {
                 </>
               ) : null}
             </>
+          ) : nekoType === 'Transferencia' ? (
+            <View style={styles.transferBlock}>
+              <View style={styles.repeatRow}>
+                <View style={styles.repeatTextCol}>
+                  <Text style={styles.repeatTitle}>Registrar las dos cuentas</Text>
+                  <Text style={styles.repeatHint}>
+                    Salida desde la cuenta de arriba y entrada en la cuenta destino (como en Neko).
+                  </Text>
+                </View>
+                <Switch value={transferPair} onValueChange={setTransferPair} />
+              </View>
+              {transferPair ? (
+                <>
+                  <Text style={styles.label}>Cuenta destino</Text>
+                  <View style={styles.chipWrap}>
+                    {accountNames.map((name) => (
+                      <Pressable
+                        key={name}
+                        style={[
+                          styles.categoryChip,
+                          transferToAccount === name && styles.categoryChipActive,
+                        ]}
+                        onPress={() => setTransferToAccount(name)}
+                      >
+                        <Text
+                          style={[
+                            styles.categoryChipText,
+                            transferToAccount === name && styles.categoryChipTextActive,
+                          ]}
+                        >
+                          {name}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </>
+              ) : (
+                <Text style={styles.transferNote}>
+                  Solo se guarda un lado (como antes). Activa el interruptor para el par completo.
+                </Text>
+              )}
+            </View>
           ) : (
             <Text style={styles.transferNote}>
-              Las transferencias en NEKO suelen ser dos movimientos (salida y entrada). Aquí puedes
-              registrar un lado; importa el CSV para el historial completo.
+              Pago de tarjeta: un solo movimiento por ahora. Importa el CSV para el historial de Neko.
             </Text>
           )}
 
@@ -358,6 +428,14 @@ const styles = StyleSheet.create({
   categoryChipText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   categoryChipTextActive: { color: colors.white },
   transferNote: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
+  transferBlock: {
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 10,
+  },
   repeatBlock: {
     marginTop: 4,
     padding: 14,

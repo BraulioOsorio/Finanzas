@@ -21,11 +21,14 @@ NEKO ([nekomoney.app](https://www.nekomoney.app/es)) es una app **cerrada** (iOS
 | Importar CSV | Pestaña Importar |
 | Transferencias no son “gasto” | `kind: transfer` excluido del flujo ingreso/gasto |
 | Varios saldos | Pestaña Cuentas |
+| Editar movimiento | Historial → tocar fila o «Editar» |
+| Filtros historial | Buscar, mes, cuenta, grupo |
+| Transferencia en pareja | Registrar → Transferencia |
+| Sugerir Plan tras import | Importar (quincena, Netflix, Claro…) |
 
 ## Qué NO está aún (premium / complejo en NEKO)
 
-- Recordatorios y **pagos a meses** con lógica de tarjeta (v1 Plan es recurrente simple)
-- Pagos recurrentes y quincena
+- Recordatorios y **pagos a meses** con lógica de tarjeta
 - Presupuesto por categoría
 - Tarjetas/préstamos con lógica de corte
 - Widgets, Siri, sincronización nube

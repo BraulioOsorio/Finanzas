@@ -22,12 +22,14 @@ import { DEFAULT_ACCOUNTS } from '../domain/nekoCatalog';
 import { applyImport, parseNekoCsv } from '../import/parseNekoCsv';
 import { loadScheduledPayments, saveScheduledPayments } from '../storage/scheduled';
 import { loadTransactions, saveTransactions } from '../storage/transactions';
+import { classifyNekoType } from '../import/nekoMapping';
 import type {
   ImportResult,
   ScheduledPayment,
   ScheduledPaymentDraft,
   Transaction,
   TransactionDraft,
+  TransactionUpdate,
 } from '../types';
 
 type TransactionsContextValue = {
@@ -35,6 +37,15 @@ type TransactionsContextValue = {
   loading: boolean;
   transactionCount: number;
   addTransaction: (draft: TransactionDraft) => Promise<void>;
+  addTransferPair: (params: {
+    amount: number;
+    postedDate: string;
+    description: string;
+    notes: string;
+    fromAccount: string;
+    toAccount: string;
+  }) => Promise<void>;
+  updateTransaction: (id: string, update: TransactionUpdate) => Promise<void>;
   removeTransaction: (id: string) => Promise<void>;
   importNekoCsv: (csv: string, mode: 'replace' | 'merge') => Promise<ImportResult>;
   balance: number;
@@ -103,6 +114,84 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [persist, transactions],
   );
 
+  const addTransferPair = useCallback(
+    async (params: {
+      amount: number;
+      postedDate: string;
+      description: string;
+      notes: string;
+      fromAccount: string;
+      toAccount: string;
+    }) => {
+      if (params.fromAccount === params.toAccount) {
+        throw new Error('Las cuentas deben ser distintas');
+      }
+      const now = new Date().toISOString();
+      const desc = params.description.trim() || 'Transferencia';
+      const base = {
+        kind: 'transfer' as const,
+        type: 'expense' as const,
+        amount: params.amount,
+        postedDate: params.postedDate,
+        nekoType: 'Transferencia',
+        description: desc,
+        categoryGroup: '',
+        category: 'Transferencia',
+        notes: params.notes.trim(),
+        source: 'manual' as const,
+      };
+      const out: Transaction = {
+        ...base,
+        id: `${Date.now()}-out-${Math.random().toString(36).slice(2, 7)}`,
+        createdAt: now,
+        account: params.fromAccount,
+        signedAmount: -params.amount,
+      };
+      const entry: Transaction = {
+        ...base,
+        id: `${Date.now()}-in-${Math.random().toString(36).slice(2, 7)}`,
+        createdAt: now,
+        account: params.toAccount,
+        signedAmount: params.amount,
+      };
+      await persist([out, entry, ...transactions]);
+    },
+    [persist, transactions],
+  );
+
+  const updateTransaction = useCallback(
+    async (id: string, update: TransactionUpdate) => {
+      const idx = transactions.findIndex((t) => t.id === id);
+      if (idx < 0) {
+        return;
+      }
+      const prev = transactions[idx];
+      const kind = classifyNekoType(update.nekoType);
+      const type = kind === 'income' ? 'income' : 'expense';
+      let signedAmount = update.signedAmount;
+      if (kind !== 'transfer') {
+        signedAmount = kind === 'income' ? update.amount : -update.amount;
+      } else if (signedAmount === 0 || Math.sign(signedAmount) === 0) {
+        signedAmount = prev.signedAmount >= 0 ? update.amount : -update.amount;
+      } else {
+        signedAmount = Math.sign(signedAmount) * update.amount;
+      }
+
+      const nextTx: Transaction = {
+        ...prev,
+        ...update,
+        kind,
+        type,
+        signedAmount,
+        source: update.source ?? prev.source,
+      };
+      const next = [...transactions];
+      next[idx] = nextTx;
+      await persist(next);
+    },
+    [persist, transactions],
+  );
+
   const removeTransaction = useCallback(
     async (id: string) => {
       await persist(transactions.filter((t) => t.id !== id));
@@ -146,7 +235,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     async (csv: string, mode: 'replace' | 'merge'): Promise<ImportResult> => {
       const { transactions: incoming, errors: parseErrors } = parseNekoCsv(csv);
       if (incoming.length === 0 && parseErrors.length > 0) {
-        return { imported: 0, skipped: 0, errors: parseErrors };
+        return { imported: 0, skipped: 0, errors: parseErrors, transactionsAfter: transactions };
       }
 
       const { next, result } = applyImport(transactions, incoming, mode);
@@ -155,6 +244,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         imported: result.imported,
         skipped: result.skipped,
         errors: [...parseErrors, ...result.errors],
+        transactionsAfter: next,
       };
     },
     [persist, transactions],
@@ -205,6 +295,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       loading,
       transactionCount: transactions.length,
       addTransaction,
+      addTransferPair,
+      updateTransaction,
       removeTransaction,
       importNekoCsv,
       balance,
@@ -225,6 +317,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       transactions,
       loading,
       addTransaction,
+      addTransferPair,
+      updateTransaction,
       removeTransaction,
       importNekoCsv,
       balance,
