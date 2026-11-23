@@ -7,11 +7,13 @@ const KEY = '@finanzas/preferences_v1';
 export type StoredPreferences = {
   iconDisplayMode: IconDisplayMode;
   onboardingComplete: boolean;
+  creditRemindersEnabled: boolean;
 };
 
 const DEFAULTS: StoredPreferences = {
   iconDisplayMode: 'category',
   onboardingComplete: false,
+  creditRemindersEnabled: false,
 };
 
 export async function loadPreferences(): Promise<StoredPreferences> {
@@ -27,6 +29,7 @@ export async function loadPreferences(): Promise<StoredPreferences> {
     return {
       iconDisplayMode,
       onboardingComplete: Boolean(parsed.onboardingComplete),
+      creditRemindersEnabled: Boolean(parsed.creditRemindersEnabled),
     };
   } catch {
     return { ...DEFAULTS };

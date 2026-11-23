@@ -30,6 +30,7 @@ import { loadAccounts, saveAccounts } from '../storage/accounts';
 import { loadBudgets, saveBudgets } from '../storage/budgets';
 import { loadCategoryTree, saveCategoryTree, type CategoryTree } from '../storage/categoryTree';
 import { applyImport, parseNekoCsv } from '../import/parseNekoCsv';
+import { buildTodayAgenda, buildTomorrowHeadline } from '../domain/today';
 import { buildUpcoming, type UpcomingItem } from '../domain/upcoming';
 import { loadInstallmentPlans, saveInstallmentPlans } from '../storage/installments';
 import { loadScheduledPayments, saveScheduledPayments } from '../storage/scheduled';
@@ -97,6 +98,9 @@ type TransactionsContextValue = {
   removeInstallmentPlan: (id: string) => Promise<void>;
   toggleInstallmentPlan: (id: string, active: boolean) => Promise<void>;
   upcomingItems: UpcomingItem[];
+  todayAgenda: ReturnType<typeof buildTodayAgenda>;
+  tomorrowHeadline: UpcomingItem[];
+  addInstallmentPlansBatch: (drafts: InstallmentPlanDraft[]) => Promise<number>;
 };
 
 const TransactionsContext = createContext<TransactionsContextValue | null>(null);
@@ -469,6 +473,31 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [scheduledPayments, installmentPlans, accounts, transactions],
   );
 
+  const todayAgenda = useMemo(
+    () => buildTodayAgenda(transactions, upcomingItems),
+    [transactions, upcomingItems],
+  );
+
+  const tomorrowHeadline = useMemo(
+    () => buildTomorrowHeadline(upcomingItems),
+    [upcomingItems],
+  );
+
+  const addInstallmentPlansBatch = useCallback(
+    async (drafts: InstallmentPlanDraft[]) => {
+      if (!drafts.length) {
+        return 0;
+      }
+      const entries: InstallmentPlan[] = drafts.map((draft) => ({
+        ...draft,
+        id: `ins-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      }));
+      await persistInstallments([...entries, ...installmentPlans]);
+      return entries.length;
+    },
+    [persistInstallments, installmentPlans],
+  );
+
   const importNekoCsv = useCallback(
     async (csv: string, mode: 'replace' | 'merge'): Promise<ImportResult> => {
       const { transactions: incoming, errors: parseErrors } = parseNekoCsv(csv);
@@ -577,6 +606,9 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       removeInstallmentPlan,
       toggleInstallmentPlan,
       upcomingItems,
+      todayAgenda,
+      tomorrowHeadline,
+      addInstallmentPlansBatch,
     }),
     [
       transactions,
@@ -617,6 +649,9 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       removeInstallmentPlan,
       toggleInstallmentPlan,
       upcomingItems,
+      todayAgenda,
+      tomorrowHeadline,
+      addInstallmentPlansBatch,
     ],
   );
 

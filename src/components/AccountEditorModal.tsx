@@ -46,6 +46,8 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
   const [interestRateEA, setInterestRateEA] = useState('');
   const [installmentInterestEA, setInstallmentInterestEA] = useState('');
   const [minimumPaymentPercent, setMinimumPaymentPercent] = useState('');
+  const [installmentLag, setInstallmentLag] = useState('');
+  const [archived, setArchived] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const parseDay = (raw: string): number | undefined => {
@@ -78,6 +80,12 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       setMinimumPaymentPercent(
         editing.minimumPaymentPercent != null ? String(editing.minimumPaymentPercent) : '',
       );
+      setInstallmentLag(
+        editing.installmentStatementLagMonths != null
+          ? String(editing.installmentStatementLagMonths)
+          : '',
+      );
+      setArchived(editing.archived);
     } else {
       const seed = initialName?.trim() ?? '';
       setName(seed);
@@ -92,6 +100,8 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       setInterestRateEA('');
       setInstallmentInterestEA('');
       setMinimumPaymentPercent('');
+      setInstallmentLag('');
+      setArchived(false);
     }
   }, [visible, editing, initialName]);
 
@@ -119,6 +129,9 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
     }
     if (p.minimumPaymentPercent != null) {
       setMinimumPaymentPercent(String(p.minimumPaymentPercent));
+    }
+    if (p.installmentStatementLagMonths != null) {
+      setInstallmentLag(String(p.installmentStatementLagMonths));
     }
     Alert.alert('Plantilla aplicada', `Valores orientativos ${hit.label}. Revisa con tu extracto real.`);
   };
@@ -173,7 +186,7 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       kind,
       liquid,
       notes: notes.trim(),
-      archived: editing?.archived ?? false,
+      archived,
       creditLimit: kind === 'credit' && limit > 0 ? limit : undefined,
       statementCloseDay: kind === 'credit' ? parseDay(statementCloseDay) : undefined,
       paymentDueDay: kind === 'credit' ? parseDay(paymentDueDay) : undefined,
@@ -182,6 +195,8 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       interestRateEA: kind === 'credit' ? parseEa(interestRateEA) : undefined,
       installmentInterestEA: kind === 'credit' ? parseEa(installmentInterestEA) : undefined,
       minimumPaymentPercent: kind === 'credit' ? parsePct(minimumPaymentPercent) : undefined,
+      installmentStatementLagMonths:
+        kind === 'credit' ? parseDay(installmentLag) : undefined,
     };
 
     setSaving(true);
@@ -237,6 +252,14 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
                 </Text>
               </Pressable>
             ))}
+          </View>
+
+          <View style={styles.switchRow}>
+            <View style={styles.switchText}>
+              <Text style={styles.switchTitle}>Archivada</Text>
+              <Text style={styles.switchHint}>Oculta la cuenta de listas sin borrar movimientos.</Text>
+            </View>
+            <Switch value={archived} onValueChange={setArchived} />
           </View>
 
           <View style={styles.switchRow}>
@@ -340,6 +363,15 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
                   />
                 </View>
               </View>
+              <Text style={styles.label}>1.ª cuota: extractos después del corte</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="number-pad"
+                value={installmentLag}
+                onChangeText={setInstallmentLag}
+                placeholder="1 (RappiCard) · 0 (Addi)"
+                placeholderTextColor={colors.textMuted}
+              />
             </>
           ) : null}
 

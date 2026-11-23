@@ -33,6 +33,8 @@ export type AccountDef = {
   installmentInterestEA?: number;
   /** % mínimo de pago sobre extracto (orientativo) */
   minimumPaymentPercent?: number;
+  /** Meses hasta la 1.ª cuota en extracto (RappiCard 1; algunos 0) */
+  installmentStatementLagMonths?: number;
 };
 
 /** Presupuesto mensual por grupo o categoría Neko */

@@ -19,7 +19,10 @@ export function installmentStatementCloseDates(
 
   const purchase = plan.purchaseDate || plan.startDate;
   const purchaseClose = statementCloseContainingPurchase(purchase, closeDay);
-  const lag = plan.statementLagMonths ?? 1;
+  const lag =
+    plan.statementLagMonths ??
+    account.installmentStatementLagMonths ??
+    1;
 
   const out: string[] = [];
   for (let i = 0; i < plan.installmentCount; i++) {

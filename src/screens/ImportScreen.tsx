@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { suggestInstallmentsFromTransactions } from '../domain/suggestInstallmentsFromTransactions';
 import { suggestRecurringFromTransactions } from '../domain/suggestRecurringFromTransactions';
 import { useTransactions } from '../context/TransactionsContext';
 import { transactionsToNekoCsv } from '../export/nekoCsvExport';
@@ -28,6 +29,9 @@ export function ImportScreen() {
     transactions,
     scheduledPayments,
     addScheduledPayment,
+    installmentPlans,
+    accounts,
+    addInstallmentPlansBatch,
   } = useTransactions();
   const [busy, setBusy] = useState(false);
 
@@ -53,12 +57,40 @@ export function ImportScreen() {
 
       if (result.imported > 0) {
         offerPlanSuggestions(result.transactionsAfter);
+        offerInstallmentSuggestions(result.transactionsAfter);
       }
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'No se pudo importar el archivo.');
     } finally {
       setBusy(false);
     }
+  };
+
+  const offerInstallmentSuggestions = (source: typeof transactions = transactions) => {
+    const suggestions = suggestInstallmentsFromTransactions(source, accounts, installmentPlans);
+    if (!suggestions.length) {
+      return;
+    }
+    const preview = suggestions
+      .slice(0, 5)
+      .map((s) => `• ${s.title} (${s.installmentCount} cuotas, ${s.reason})`)
+      .join('\n');
+    Alert.alert(
+      '¿Sincronizar compras a meses?',
+      `Desde tu CSV (tipo Compra a meses). Ajusta cuotas en Plan si no coinciden con el banco:\n\n${preview}${suggestions.length > 5 ? `\n… y ${suggestions.length - 5} más` : ''}`,
+      [
+        { text: 'Ahora no', style: 'cancel' },
+        {
+          text: 'Crear planes',
+          onPress: async () => {
+            const n = await addInstallmentPlansBatch(
+              suggestions.map(({ reason: _r, fingerprint: _f, ...draft }) => draft),
+            );
+            Alert.alert('Listo', `${n} compras a meses en Plan (con corte de tarjeta si aplica).`);
+          },
+        },
+      ],
+    );
   };
 
   const offerPlanSuggestions = (source: typeof transactions = transactions) => {
@@ -206,6 +238,14 @@ export function ImportScreen() {
           disabled={busy || transactionCount === 0}
         >
           <Text style={styles.buttonSecondaryText}>Sugerir recurrentes al Plan (desde historial)</Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.button, styles.buttonSecondary]}
+          onPress={() => offerInstallmentSuggestions()}
+          disabled={busy || transactionCount === 0}
+        >
+          <Text style={styles.buttonSecondaryText}>Sincronizar compras a meses (CSV / historial)</Text>
         </Pressable>
 
         <Pressable

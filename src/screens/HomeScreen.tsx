@@ -5,6 +5,7 @@ import { AccountBalanceRow } from '../components/AccountBalanceRow';
 import { BudgetProgressList } from '../components/BudgetProgressList';
 import { CreditCardSummaryList } from '../components/CreditCardSummaryList';
 import { TransactionRow } from '../components/TransactionRow';
+import { TodayAgenda } from '../components/TodayAgenda';
 import { UpcomingList } from '../components/UpcomingList';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
@@ -22,6 +23,8 @@ export function HomeScreen() {
     budgetProgress,
     creditCardSummaries,
     upcomingItems,
+    todayAgenda,
+    tomorrowHeadline,
   } = useTransactions();
   const recent = transactions.slice(0, 5);
   const topAccounts = accountBalances.slice(0, 4);
@@ -31,6 +34,8 @@ export function HomeScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.greeting}>Finanzas</Text>
         <Text style={styles.subtitle}>Resumen al estilo NEKO (datos en tu teléfono)</Text>
+
+        <TodayAgenda items={todayAgenda} tomorrow={tomorrowHeadline} />
 
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>Disponible para gastar</Text>

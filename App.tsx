@@ -15,6 +15,7 @@ import { ImportScreen } from './src/screens/ImportScreen';
 import { PlanScreen } from './src/screens/PlanScreen';
 import { CategoriesScreen } from './src/screens/CategoriesScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { CreditReminderSync } from './src/components/CreditReminderSync';
 import { OnboardingGate } from './src/components/OnboardingGate';
 import { colors } from './src/theme';
 
@@ -45,6 +46,7 @@ export default function App() {
     <SafeAreaProvider>
       <PreferencesProvider>
         <TransactionsProvider>
+          <CreditReminderSync />
           <OnboardingGate>
           <NavigationContainer theme={navTheme}>
           <StatusBar style="light" />

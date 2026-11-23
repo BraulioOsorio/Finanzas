@@ -20,6 +20,8 @@ type PreferencesContextValue = {
   setIconDisplayMode: (mode: IconDisplayMode) => Promise<void>;
   onboardingComplete: boolean;
   completeOnboarding: () => Promise<void>;
+  creditRemindersEnabled: boolean;
+  setCreditRemindersEnabled: (enabled: boolean) => Promise<void>;
   prefsLoading: boolean;
 };
 
@@ -28,6 +30,7 @@ const PreferencesContext = createContext<PreferencesContextValue | null>(null);
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [iconDisplayMode, setIconDisplayModeState] = useState<IconDisplayMode>('category');
   const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [creditRemindersEnabled, setCreditRemindersEnabledState] = useState(false);
   const [prefsLoading, setPrefsLoading] = useState(true);
 
   useEffect(() => {
@@ -37,6 +40,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       if (!cancelled) {
         setIconDisplayModeState(prefs.iconDisplayMode);
         setOnboardingComplete(prefs.onboardingComplete);
+        setCreditRemindersEnabledState(prefs.creditRemindersEnabled);
         setPrefsLoading(false);
       }
     })();
@@ -50,10 +54,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       await savePreferences({
         iconDisplayMode,
         onboardingComplete,
+        creditRemindersEnabled,
         ...patch,
       });
     },
-    [iconDisplayMode, onboardingComplete],
+    [iconDisplayMode, onboardingComplete, creditRemindersEnabled],
   );
 
   const setIconDisplayMode = useCallback(
@@ -69,15 +74,33 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     await persist({ onboardingComplete: true });
   }, [persist]);
 
+  const setCreditRemindersEnabled = useCallback(
+    async (enabled: boolean) => {
+      setCreditRemindersEnabledState(enabled);
+      await persist({ creditRemindersEnabled: enabled });
+    },
+    [persist],
+  );
+
   const value = useMemo(
     () => ({
       iconDisplayMode,
       setIconDisplayMode,
       onboardingComplete,
       completeOnboarding,
+      creditRemindersEnabled,
+      setCreditRemindersEnabled,
       prefsLoading,
     }),
-    [iconDisplayMode, setIconDisplayMode, onboardingComplete, completeOnboarding, prefsLoading],
+    [
+      iconDisplayMode,
+      setIconDisplayMode,
+      onboardingComplete,
+      completeOnboarding,
+      creditRemindersEnabled,
+      setCreditRemindersEnabled,
+      prefsLoading,
+    ],
   );
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;

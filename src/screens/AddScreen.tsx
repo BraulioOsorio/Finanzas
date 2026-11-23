@@ -157,7 +157,9 @@ export function AddScreen() {
           startDate: installmentStartDate,
           purchaseDate: installmentStartDate,
           billingMode: onCredit ? 'card_statement' : 'calendar',
-          statementLagMonths: onCredit ? 1 : 0,
+          statementLagMonths: onCredit
+            ? (cardDef?.installmentStatementLagMonths ?? 1)
+            : 0,
           active: true,
         });
         setAmount('');

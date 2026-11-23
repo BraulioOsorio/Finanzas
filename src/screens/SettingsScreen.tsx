@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IconModePreview } from '../components/IconModePreview';
@@ -8,7 +8,13 @@ import { usePreferences } from '../context/PreferencesContext';
 import { colors } from '../theme';
 
 export function SettingsScreen() {
-  const { iconDisplayMode, setIconDisplayMode, prefsLoading } = usePreferences();
+  const {
+    iconDisplayMode,
+    setIconDisplayMode,
+    creditRemindersEnabled,
+    setCreditRemindersEnabled,
+    prefsLoading,
+  } = usePreferences();
   const [draftMode, setDraftMode] = useState(iconDisplayMode);
   const [saving, setSaving] = useState(false);
 
@@ -59,6 +65,21 @@ export function SettingsScreen() {
         </View>
 
         <View style={styles.card}>
+          <View style={styles.switchRow}>
+            <View style={styles.switchText}>
+              <Text style={styles.cardTitle}>Recordatorios de tarjeta</Text>
+              <Text style={styles.cardBody}>
+                Aviso local un día antes del corte, pago o cuota (sin servidor). Cortes y EA en Cuentas.
+              </Text>
+            </View>
+            <Switch
+              value={creditRemindersEnabled}
+              onValueChange={(v) => void setCreditRemindersEnabled(v)}
+            />
+          </View>
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.cardTitle}>Pagos recurrentes</Text>
           <Text style={styles.cardBody}>
             En Registrar puedes marcar «Repetir» al guardar (quincena, suscripciones, arriendo). También
@@ -95,4 +116,6 @@ const styles = StyleSheet.create({
   },
   saveBtnDisabled: { opacity: 0.45 },
   saveBtnText: { color: colors.white, fontWeight: '800', fontSize: 16 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  switchText: { flex: 1, gap: 6 },
 });

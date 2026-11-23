@@ -9,6 +9,7 @@ export type CreditPreset = Pick<
   | 'interestRateEA'
   | 'installmentInterestEA'
   | 'minimumPaymentPercent'
+  | 'installmentStatementLagMonths'
 >;
 
 const PRESETS: { match: RegExp; preset: CreditPreset; label: string }[] = [
@@ -22,6 +23,7 @@ const PRESETS: { match: RegExp; preset: CreditPreset; label: string }[] = [
       interestRateEA: 29.9,
       installmentInterestEA: 0,
       minimumPaymentPercent: 15,
+      installmentStatementLagMonths: 1,
     },
   },
   {
@@ -34,6 +36,7 @@ const PRESETS: { match: RegExp; preset: CreditPreset; label: string }[] = [
       interestRateEA: 24.9,
       installmentInterestEA: 0,
       minimumPaymentPercent: 10,
+      installmentStatementLagMonths: 1,
     },
   },
   {
@@ -46,6 +49,7 @@ const PRESETS: { match: RegExp; preset: CreditPreset; label: string }[] = [
       interestRateEA: 24.9,
       installmentInterestEA: 0,
       minimumPaymentPercent: 10,
+      installmentStatementLagMonths: 1,
     },
   },
   {
@@ -58,6 +62,7 @@ const PRESETS: { match: RegExp; preset: CreditPreset; label: string }[] = [
       interestRateEA: 24.7,
       installmentInterestEA: 22.8,
       minimumPaymentPercent: 10,
+      installmentStatementLagMonths: 1,
     },
   },
   {
@@ -70,6 +75,7 @@ const PRESETS: { match: RegExp; preset: CreditPreset; label: string }[] = [
       interestRateEA: 25.4,
       installmentInterestEA: 23.5,
       minimumPaymentPercent: 10,
+      installmentStatementLagMonths: 1,
     },
   },
   {
@@ -82,6 +88,7 @@ const PRESETS: { match: RegExp; preset: CreditPreset; label: string }[] = [
       interestRateEA: 25.9,
       installmentInterestEA: 0,
       minimumPaymentPercent: 10,
+      installmentStatementLagMonths: 1,
     },
   },
   {
@@ -94,6 +101,7 @@ const PRESETS: { match: RegExp; preset: CreditPreset; label: string }[] = [
       interestRateEA: 26.5,
       installmentInterestEA: 0,
       minimumPaymentPercent: 10,
+      installmentStatementLagMonths: 0,
     },
   },
   {
@@ -106,6 +114,7 @@ const PRESETS: { match: RegExp; preset: CreditPreset; label: string }[] = [
       interestRateEA: 0,
       installmentInterestEA: 24,
       minimumPaymentPercent: 100,
+      installmentStatementLagMonths: 0,
     },
   },
 ];
@@ -151,6 +160,9 @@ export function applyCreditPresetToDraft(
   }
   if (out.minimumPaymentPercent == null && p.minimumPaymentPercent != null) {
     out.minimumPaymentPercent = p.minimumPaymentPercent;
+  }
+  if (out.installmentStatementLagMonths == null && p.installmentStatementLagMonths != null) {
+    out.installmentStatementLagMonths = p.installmentStatementLagMonths;
   }
   return out;
 }
