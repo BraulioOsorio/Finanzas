@@ -73,21 +73,11 @@ export function mergeAccountNames(seed: readonly string[], transactions: Transac
   return [...set].sort((a, b) => a.localeCompare(b, 'es'));
 }
 
-/** Cuentas que Neko suele tratar como “efectivo disponible” (excluye deudas/tarjetas). */
-export const LIQUID_ACCOUNT_HINTS = [
-  'Bancolombia',
-  'Efectivo',
-  'Nu',
-  'RappiCuenta',
-  'Davivienda',
-  'Única Virtual',
-  'Ahorro',
-  'Banco de Bogotá',
-] as const;
-
-export function liquidBalance(balances: AccountBalance[]): number {
-  const liquid = new Set(LIQUID_ACCOUNT_HINTS.map((a) => a.toLowerCase()));
+export function liquidBalance(
+  balances: AccountBalance[],
+  isLiquid: (accountName: string) => boolean,
+): number {
   return balances
-    .filter((b) => liquid.has(b.account.toLowerCase()))
+    .filter((b) => isLiquid(b.account))
     .reduce((sum, b) => sum + b.balance, 0);
 }

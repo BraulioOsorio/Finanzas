@@ -8,6 +8,21 @@ export type TransactionSource = 'manual' | 'neko';
 /** Icono en listas de movimientos y plan */
 export type IconDisplayMode = 'category' | 'description' | 'account';
 
+/** Dónde vive el dinero (como en Neko: banco, efectivo, tarjeta, préstamo…). */
+export type AccountKind = 'bank' | 'cash' | 'savings' | 'credit' | 'loan' | 'fintech';
+
+export type AccountDef = {
+  id: string;
+  name: string;
+  kind: AccountKind;
+  /** Incluir en «Disponible para gastar» */
+  liquid: boolean;
+  notes: string;
+  archived: boolean;
+};
+
+export type AccountDefDraft = Omit<AccountDef, 'id'>;
+
 export type Transaction = {
   id: string;
   kind: TransactionKind;

@@ -1,32 +1,54 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BrandIcon } from './BrandIcon';
 import { resolveBrandForAccount } from '../domain/brands/resolveBrand';
+import { ACCOUNT_KIND_LABELS } from '../domain/accounts/inferAccountKind';
+import { accountDefByName } from '../domain/accounts/resolveAccounts';
 import type { AccountBalance } from '../domain/summaries';
+import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
 import { formatCurrency } from '../utils/format';
 
 type Props = {
   item: AccountBalance;
+  onPress?: () => void;
 };
 
-export function AccountBalanceRow({ item }: Props) {
+export function AccountBalanceRow({ item, onPress }: Props) {
+  const { accounts } = useTransactions();
   const positive = item.balance >= 0;
   const brand = resolveBrandForAccount(item.account);
-  return (
-    <View style={styles.row}>
+  const def = accountDefByName(accounts, item.account);
+  const kindLabel = def ? ACCOUNT_KIND_LABELS[def.kind] : 'Sin tipo';
+  const liquidHint = def && !def.liquid ? ' · No cuenta en disponible' : '';
+
+  const body = (
+    <>
       <BrandIcon brand={brand} size={42} />
       <View style={styles.leading}>
         <Text style={styles.name} numberOfLines={1}>
           {item.account}
         </Text>
-        <Text style={styles.meta}>{item.movementCount} movimientos</Text>
+        <Text style={styles.meta}>
+          {kindLabel}
+          {liquidHint} · {item.movementCount} movimientos
+        </Text>
       </View>
       <Text style={[styles.amount, positive ? styles.positive : styles.negative]}>
         {formatCurrency(item.balance)}
       </Text>
-    </View>
+    </>
   );
+
+  if (onPress) {
+    return (
+      <Pressable style={styles.row} onPress={onPress}>
+        {body}
+      </Pressable>
+    );
+  }
+
+  return <View style={styles.row}>{body}</View>;
 }
 
 const styles = StyleSheet.create({

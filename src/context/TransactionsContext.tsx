@@ -8,22 +8,25 @@ import {
   type ReactNode,
 } from 'react';
 
+import { activeAccountNames, isAccountLiquid } from '../domain/accounts/resolveAccounts';
+import { defaultLiquidForKind, inferAccountKind } from '../domain/accounts/inferAccountKind';
 import {
   computeAccountBalances,
   currentMonthKey,
   liquidBalance,
-  mergeAccountNames,
   monthRealFlow,
   totalAccountBalance,
   type AccountBalance,
   type MonthFlow,
 } from '../domain/summaries';
-import { DEFAULT_ACCOUNTS } from '../domain/nekoCatalog';
+import { loadAccounts, saveAccounts } from '../storage/accounts';
 import { applyImport, parseNekoCsv } from '../import/parseNekoCsv';
 import { loadScheduledPayments, saveScheduledPayments } from '../storage/scheduled';
 import { loadTransactions, saveTransactions } from '../storage/transactions';
 import { classifyNekoType } from '../import/nekoMapping';
 import type {
+  AccountDef,
+  AccountDefDraft,
   ImportResult,
   ScheduledPayment,
   ScheduledPaymentDraft,
@@ -57,6 +60,9 @@ type TransactionsContextValue = {
   liquidAvailable: number;
   monthFlow: MonthFlow;
   accountNames: string[];
+  accounts: AccountDef[];
+  addAccount: (draft: AccountDefDraft) => Promise<void>;
+  updateAccount: (id: string, draft: AccountDefDraft) => Promise<void>;
   scheduledPayments: ScheduledPayment[];
   addScheduledPayment: (draft: ScheduledPaymentDraft) => Promise<void>;
   removeScheduledPayment: (id: string) => Promise<void>;
@@ -74,19 +80,47 @@ function sortByDateDesc(items: Transaction[]): Transaction[] {
 export function TransactionsProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
+  const [accounts, setAccounts] = useState<AccountDef[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [stored, scheduled] = await Promise.all([
+      const [stored, scheduled, accs] = await Promise.all([
         loadTransactions(),
         loadScheduledPayments(),
+        loadAccounts(),
       ]);
       if (!cancelled) {
-        setTransactions(sortByDateDesc(stored));
+        const sorted = sortByDateDesc(stored);
+        setTransactions(sorted);
         setScheduledPayments(scheduled);
+        setAccounts(accs);
         setLoading(false);
+        // Sincronizar cuentas nuevas del CSV sin bloquear la UI
+        const existing = new Set(accs.map((a) => a.name.trim().toLowerCase()));
+        const additions: AccountDef[] = [];
+        for (const t of sorted) {
+          const name = t.account.trim();
+          if (!name || existing.has(name.toLowerCase())) {
+            continue;
+          }
+          existing.add(name.toLowerCase());
+          const kind = inferAccountKind(name);
+          additions.push({
+            id: `acc-sync-${name.toLowerCase().replace(/\s+/g, '-')}`,
+            name,
+            kind,
+            liquid: defaultLiquidForKind(kind),
+            notes: '',
+            archived: false,
+          });
+        }
+        if (additions.length) {
+          const merged = [...accs, ...additions];
+          setAccounts(merged);
+          await saveAccounts(merged);
+        }
       }
     })();
     return () => {
@@ -199,6 +233,63 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [persist, transactions],
   );
 
+  const persistAccounts = useCallback(async (next: AccountDef[]) => {
+    setAccounts(next);
+    await saveAccounts(next);
+  }, []);
+
+  /** Añade cuentas del historial que aún no están en el catálogo. */
+  const syncAccountsFromTransactions = useCallback(
+    async (txs: Transaction[]) => {
+      const existing = new Set(accounts.map((a) => a.name.trim().toLowerCase()));
+      const additions: AccountDef[] = [];
+      for (const t of txs) {
+        const name = t.account.trim();
+        if (!name) {
+          continue;
+        }
+        const key = name.toLowerCase();
+        if (existing.has(key)) {
+          continue;
+        }
+        existing.add(key);
+        const kind = inferAccountKind(name);
+        additions.push({
+          id: `acc-sync-${key.replace(/\s+/g, '-')}-${Date.now()}`,
+          name,
+          kind,
+          liquid: defaultLiquidForKind(kind),
+          notes: '',
+          archived: false,
+        });
+      }
+      if (additions.length) {
+        await persistAccounts([...accounts, ...additions]);
+      }
+    },
+    [accounts, persistAccounts],
+  );
+
+  const addAccount = useCallback(
+    async (draft: AccountDefDraft) => {
+      const entry: AccountDef = {
+        ...draft,
+        id: `acc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      };
+      await persistAccounts([...accounts, entry]);
+    },
+    [accounts, persistAccounts],
+  );
+
+  const updateAccount = useCallback(
+    async (id: string, draft: AccountDefDraft) => {
+      await persistAccounts(
+        accounts.map((a) => (a.id === id ? { ...a, ...draft, id: a.id } : a)),
+      );
+    },
+    [accounts, persistAccounts],
+  );
+
   const persistScheduled = useCallback(async (next: ScheduledPayment[]) => {
     setScheduledPayments(next);
     await saveScheduledPayments(next);
@@ -240,6 +331,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
 
       const { next, result } = applyImport(transactions, incoming, mode);
       await persist(next);
+      await syncAccountsFromTransactions(next);
       return {
         imported: result.imported,
         skipped: result.skipped,
@@ -247,7 +339,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         transactionsAfter: next,
       };
     },
-    [persist, transactions],
+    [persist, transactions, syncAccountsFromTransactions],
   );
 
   const {
@@ -276,6 +368,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       }
     }
     const balances = computeAccountBalances(transactions);
+    const liquidFn = (name: string) => isAccountLiquid(accounts, name);
     return {
       totalIncome: income,
       totalExpense: expense,
@@ -283,11 +376,11 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       transferCount: transfers,
       accountBalances: balances,
       totalInAccounts: totalAccountBalance(balances),
-      liquidAvailable: liquidBalance(balances),
+      liquidAvailable: liquidBalance(balances, liquidFn),
       monthFlow: monthRealFlow(transactions, currentMonthKey()),
-      accountNames: mergeAccountNames(DEFAULT_ACCOUNTS, transactions),
+      accountNames: activeAccountNames(accounts, transactions),
     };
-  }, [transactions]);
+  }, [transactions, accounts]);
 
   const value = useMemo(
     () => ({
@@ -308,6 +401,9 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       liquidAvailable,
       monthFlow,
       accountNames,
+      accounts,
+      addAccount,
+      updateAccount,
       scheduledPayments,
       addScheduledPayment,
       removeScheduledPayment,
@@ -330,6 +426,9 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       liquidAvailable,
       monthFlow,
       accountNames,
+      accounts,
+      addAccount,
+      updateAccount,
       scheduledPayments,
       addScheduledPayment,
       removeScheduledPayment,
