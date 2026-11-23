@@ -18,6 +18,8 @@ import { CategoryPickChip } from '../components/CategoryPickChip';
 import { useNekoCatalog } from '../hooks/useNekoCatalog';
 import { scheduleFrequencyLabel } from '../domain/scheduleProjection';
 import { classifyNekoType } from '../import/nekoMapping';
+import { accountDefByName } from '../domain/accounts/resolveAccounts';
+import { estimateInstallmentWithInterest } from '../domain/credit/colombiaBilling';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
 import type { ScheduleFrequency, TransactionKind } from '../types';
@@ -33,6 +35,7 @@ export function AddScreen() {
     addInstallmentPlan,
     addTransferPair,
     accountNames,
+    accounts,
   } = useTransactions();
   const { UNCATEGORIZED_GROUP, categoriesForGroup, allCategoryGroups } = useNekoCatalog();
   const [nekoType, setNekoType] = useState<string>('Gasto');
@@ -121,7 +124,13 @@ export function AddScreen() {
       const cat = category || nekoType;
 
       if (isInstallmentPurchase) {
-        const per = Math.round(parsed / installmentCount);
+        const cardDef = accountDefByName(accounts, account);
+        const onCredit = cardDef?.kind === 'credit' && Boolean(cardDef.statementCloseDay);
+        const eaForCuotas =
+          cardDef?.installmentInterestEA ?? cardDef?.interestRateEA ?? 0;
+        const per = onCredit
+          ? estimateInstallmentWithInterest(parsed, installmentCount, eaForCuotas)
+          : Math.round(parsed / installmentCount);
         const title = description.trim() || 'Compra a meses';
         await addTransaction({
           kind: 'expense',
@@ -146,6 +155,9 @@ export function AddScreen() {
           categoryGroup: group,
           category: cat,
           startDate: installmentStartDate,
+          purchaseDate: installmentStartDate,
+          billingMode: onCredit ? 'card_statement' : 'calendar',
+          statementLagMonths: onCredit ? 1 : 0,
           active: true,
         });
         setAmount('');
@@ -153,7 +165,9 @@ export function AddScreen() {
         setNotes('');
         Alert.alert(
           'Listo',
-          `Compra a ${installmentCount} cuotas de ~${per.toLocaleString('es-CO')} COP. Proyección en Calendario y Plan.`,
+          onCredit
+            ? `${installmentCount} cuotas (~${per.toLocaleString('es-CO')} COP c/u) en cada corte de ${account}. 1.ª en el extracto siguiente a la compra.`
+            : `Compra a ${installmentCount} cuotas de ~${per.toLocaleString('es-CO')} COP. Proyección en Calendario y Plan.`,
         );
         return;
       }
@@ -363,8 +377,8 @@ export function AddScreen() {
             <View style={styles.repeatBlock}>
               <Text style={styles.repeatTitle}>Cuotas</Text>
               <Text style={styles.repeatHint}>
-                El monto total se divide en cuotas mensuales (se registra la primera cuota hoy o en la
-                fecha que elijas).
+                En tarjeta con corte configurado, las cuotas se proyectan en cada extracto (como en
+                Colombia). En efectivo/banco, van mes a mes por fecha.
               </Text>
               <View style={styles.chipWrap}>
                 {INSTALLMENT_COUNTS.map((n) => (

@@ -4,7 +4,8 @@ import {
   signedAmountForInstallment,
 } from './installments';
 import { occurrencesInRange, signedAmountForScheduled } from './scheduleProjection';
-import type { InstallmentPlan, ScheduledPayment, Transaction } from '../types';
+import { resolveInstallmentAccount } from './installments';
+import type { AccountDef, InstallmentPlan, ScheduledPayment, Transaction } from '../types';
 
 export type DayScheduledItem = {
   id: string;
@@ -57,6 +58,7 @@ export function weekdayIndexMonFirst(isoDate: string): number {
 function scheduledByDate(
   items: ScheduledPayment[],
   installmentPlans: InstallmentPlan[],
+  accounts: AccountDef[],
   monthStart: string,
   monthEnd: string,
   accountFilter?: string,
@@ -70,13 +72,14 @@ function scheduledByDate(
     if (accountFilter && plan.account.trim() !== accountFilter) {
       continue;
     }
-    const hits = installmentsInRange(plan, monthStart, monthEnd);
-    const signed = signedAmountForInstallment(plan);
+    const acc = resolveInstallmentAccount(plan, accounts);
+    const hits = installmentsInRange(plan, monthStart, monthEnd, acc);
+    const signed = signedAmountForInstallment(plan, acc);
     for (const { date, index } of hits) {
       const list = map.get(date) ?? [];
       list.push({
         id: `ins-${plan.id}-${date}`,
-        title: installmentTitle(plan, index),
+        title: installmentTitle(plan, index, acc),
         signedAmount: signed,
         account: plan.account,
       });
@@ -114,6 +117,7 @@ export function buildMonthCalendar(
   accountFilter?: string,
   scheduled: ScheduledPayment[] = [],
   installmentPlans: InstallmentPlan[] = [],
+  accounts: AccountDef[] = [],
   todayIso?: string,
 ): { days: DaySnapshot[]; startPadding: number } {
   const today = todayIso ?? new Date().toISOString().slice(0, 10);
@@ -142,6 +146,7 @@ export function buildMonthCalendar(
   const scheduledMap = scheduledByDate(
     scheduled,
     installmentPlans,
+    accounts,
     monthStart,
     monthEnd,
     accountFilter,

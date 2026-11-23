@@ -8,7 +8,11 @@ import {
   type ReactNode,
 } from 'react';
 
-import { creditCardSummaries } from '../domain/accounts/creditSummary';
+import {
+  creditCardSummaries,
+  enrichAccountsWithBillingDefaults,
+} from '../domain/accounts/creditSummary';
+import { applyCreditPresetToDraft } from '../domain/credit/creditPresets';
 import { activeAccountNames, isAccountLiquid } from '../domain/accounts/resolveAccounts';
 import { budgetProgressForMonth, type BudgetProgress } from '../domain/budgets';
 import type { CreditCardSummary } from '../domain/accounts/creditSummary';
@@ -128,7 +132,11 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         setTransactions(sorted);
         setScheduledPayments(scheduled);
         setInstallmentPlans(installments);
-        setAccounts(accs);
+        const enrichedAccs = enrichAccountsWithBillingDefaults(accs);
+        setAccounts(enrichedAccs);
+        if (JSON.stringify(enrichedAccs) !== JSON.stringify(accs)) {
+          await saveAccounts(enrichedAccs);
+        }
         setCategoryTreeState(tree);
         setBudgets(budgetList);
         setLoading(false);
@@ -307,8 +315,9 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
 
   const addAccount = useCallback(
     async (draft: AccountDefDraft) => {
+      const withPreset = applyCreditPresetToDraft(draft.name, draft) as AccountDefDraft;
       const entry: AccountDef = {
-        ...draft,
+        ...withPreset,
         id: `acc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       };
       await persistAccounts([...accounts, entry]);
@@ -456,8 +465,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   );
 
   const upcomingItems = useMemo(
-    () => buildUpcoming(scheduledPayments, installmentPlans, accounts),
-    [scheduledPayments, installmentPlans, accounts],
+    () => buildUpcoming(scheduledPayments, installmentPlans, accounts, transactions),
+    [scheduledPayments, installmentPlans, accounts, transactions],
   );
 
   const importNekoCsv = useCallback(
@@ -510,7 +519,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     const balances = computeAccountBalances(transactions);
     const liquidFn = (name: string) => isAccountLiquid(accounts, name);
     const monthKey = currentMonthKey();
-  const creditSummary = creditCardSummaries(accounts, balances);
+  const creditSummary = creditCardSummaries(accounts, balances, transactions, installmentPlans);
     const budgetProg = budgetProgressForMonth(budgets, transactions, monthKey);
     return {
       totalIncome: income,
@@ -525,7 +534,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       creditSummary,
       budgetProg,
     };
-  }, [transactions, accounts, budgets]);
+  }, [transactions, accounts, budgets, installmentPlans]);
 
   const value = useMemo(
     () => ({

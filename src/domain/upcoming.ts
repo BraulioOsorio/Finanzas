@@ -1,6 +1,13 @@
-import { installmentsInRange, installmentTitle, signedAmountForInstallment } from './installments';
+import { paymentDueForStatementClose } from './credit/colombiaBilling';
+import {
+  installmentsInRange,
+  installmentTitle,
+  resolveInstallmentAccount,
+  signedAmountForInstallment,
+} from './installments';
+import { allCardOutlooks } from './credit/statementProjection';
 import { occurrencesInRange, signedAmountForScheduled } from './scheduleProjection';
-import type { AccountDef, InstallmentPlan, ScheduledPayment } from '../types';
+import type { AccountDef, InstallmentPlan, ScheduledPayment, Transaction } from '../types';
 
 export type UpcomingItem = {
   id: string;
@@ -8,7 +15,8 @@ export type UpcomingItem = {
   title: string;
   signedAmount: number;
   account: string;
-  kind: 'plan' | 'installment' | 'card_due';
+  kind: 'plan' | 'installment' | 'card_due' | 'card_close';
+  subtitle?: string;
 };
 
 function addDays(iso: string, days: number): string {
@@ -22,6 +30,7 @@ export function buildUpcoming(
   scheduled: ScheduledPayment[],
   installments: InstallmentPlan[],
   accounts: AccountDef[],
+  transactions: Transaction[] = [],
   today = new Date().toISOString().slice(0, 10),
   daysAhead = 14,
 ): UpcomingItem[] {
@@ -47,41 +56,84 @@ export function buildUpcoming(
     if (!plan.active) {
       continue;
     }
-    const hits = installmentsInRange(plan, today, rangeEnd);
-    const signed = signedAmountForInstallment(plan);
+    const acc = resolveInstallmentAccount(plan, accounts);
+    const hits = installmentsInRange(plan, today, rangeEnd, acc);
+    const signed = signedAmountForInstallment(plan, acc);
     for (const { date, index } of hits) {
       out.push({
         id: `ins-${plan.id}-${date}`,
         date,
-        title: installmentTitle(plan, index),
+        title: installmentTitle(plan, index, acc),
         signedAmount: signed,
         account: plan.account,
         kind: 'installment',
+        subtitle: acc?.statementCloseDay ? 'Cuota en extracto' : undefined,
       });
     }
   }
 
+  for (const outlook of allCardOutlooks(accounts, transactions, installments, today)) {
+    if (outlook.nextClose >= today && outlook.nextClose <= rangeEnd) {
+      out.push({
+        id: `close-${outlook.account}-${outlook.nextClose}`,
+        date: outlook.nextClose,
+        title: `Corte de extracto · ${outlook.account}`,
+        signedAmount: -outlook.estimatedStatement,
+        account: outlook.account,
+        kind: 'card_close',
+        subtitle: `Compras periodo ~${outlook.purchasesInPeriod.toLocaleString('es-CO')} COP`,
+      });
+    }
+
+    if (outlook.nextDue && outlook.nextDue >= today && outlook.nextDue <= rangeEnd) {
+      const acc = accounts.find((a) => a.name === outlook.account);
+      const min = outlook.estimatedMinimum;
+      const intHint =
+        outlook.estimatedInterestIfUnpaid > 0
+          ? ` · interés rotativo ~${outlook.estimatedInterestIfUnpaid.toLocaleString('es-CO')}`
+          : '';
+      out.push({
+        id: `due-${outlook.account}-${outlook.nextDue}`,
+        date: outlook.nextDue,
+        title: `Pago tarjeta · ${outlook.account}`,
+        signedAmount: -min,
+        account: outlook.account,
+        kind: 'card_due',
+        subtitle: `Mínimo orientativo · extracto ~${outlook.estimatedStatement.toLocaleString('es-CO')}${intHint}`,
+      });
+      void acc;
+    }
+  }
+
+  // Tarjetas sin periodo calculable pero con día de pago fijo
   for (const acc of accounts) {
-    if (!acc.paymentDueDay || acc.archived || acc.kind !== 'credit') {
+    if (acc.archived || acc.kind !== 'credit' || acc.statementCloseDay) {
       continue;
     }
-    const due = nextCreditDueDate(today, acc.paymentDueDay);
+    if (!acc.paymentDueDay) {
+      continue;
+    }
+    const due = legacyNextDue(today, acc.paymentDueDay);
     if (due >= today && due <= rangeEnd) {
-      out.push({
-        id: `card-${acc.id}-${due}`,
-        date: due,
-        title: `Pago tarjeta · ${acc.name}`,
-        signedAmount: 0,
-        account: acc.name,
-        kind: 'card_due',
-      });
+      const already = out.some((x) => x.kind === 'card_due' && x.account === acc.name && x.date === due);
+      if (!already) {
+        out.push({
+          id: `card-${acc.id}-${due}`,
+          date: due,
+          title: `Pago tarjeta · ${acc.name}`,
+          signedAmount: 0,
+          account: acc.name,
+          kind: 'card_due',
+          subtitle: 'Configura corte y EA en Cuentas para estimar el monto',
+        });
+      }
     }
   }
 
   return out.sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
 }
 
-function nextCreditDueDate(fromIso: string, dueDay: number): string {
+function legacyNextDue(fromIso: string, dueDay: number): string {
   const d = new Date(`${fromIso}T12:00:00`);
   const year = d.getFullYear();
   const month = d.getMonth();
@@ -90,4 +142,8 @@ function nextCreditDueDate(fromIso: string, dueDay: number): string {
     candidate = new Date(year, month + 1, Math.min(dueDay, 28));
   }
   return candidate.toISOString().slice(0, 10);
+}
+
+export function nextDueForAccount(acc: AccountDef, closeIso: string): string | undefined {
+  return paymentDueForStatementClose(closeIso, acc);
 }

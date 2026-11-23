@@ -27,7 +27,8 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 }
 
 export function CalendarScreen() {
-  const { transactions, accountNames, scheduledPayments, installmentPlans } = useTransactions();
+  const { transactions, accountNames, scheduledPayments, installmentPlans, accounts } =
+    useTransactions();
   const [monthKey, setMonthKey] = useState(monthKeyFromDate(new Date()));
   const [accountFilter, setAccountFilter] = useState<string | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -40,8 +41,9 @@ export function CalendarScreen() {
         accountFilter,
         scheduledPayments,
         installmentPlans,
+        accounts,
       ),
-    [transactions, monthKey, accountFilter, scheduledPayments, installmentPlans],
+    [transactions, monthKey, accountFilter, scheduledPayments, installmentPlans, accounts],
   );
 
   const selected = selectedDate ? days.find((d) => d.date === selectedDate) : undefined;

@@ -1,10 +1,22 @@
+import { accountDefByName } from './accounts/resolveAccounts';
+import { estimateInstallmentWithInterest } from './credit/colombiaBilling';
+import {
+  installmentStatementCloseDates,
+  shouldUseStatementBilling,
+} from './credit/installmentBilling';
 import { addMonths } from './scheduleProjection';
-import type { InstallmentPlan } from '../types';
+import type { AccountDef, InstallmentPlan } from '../types';
 
-/** Fechas de cada cuota (mensual desde startDate). */
-export function installmentDates(plan: InstallmentPlan): string[] {
+/** Fechas visibles de cada cuota (corte de tarjeta o calendario mensual). */
+export function installmentDates(plan: InstallmentPlan, account?: AccountDef): string[] {
   if (!plan.active) {
     return [];
+  }
+  if (account && shouldUseStatementBilling(plan, account)) {
+    const onStatement = installmentStatementCloseDates(plan, account);
+    if (onStatement.length) {
+      return onStatement;
+    }
   }
   const out: string[] = [];
   for (let i = 0; i < plan.installmentCount; i++) {
@@ -17,9 +29,10 @@ export function installmentsInRange(
   plan: InstallmentPlan,
   rangeStart: string,
   rangeEnd: string,
+  account?: AccountDef,
 ): { date: string; index: number }[] {
   const hits: { date: string; index: number }[] = [];
-  planDates(plan).forEach((date, index) => {
+  installmentDates(plan, account).forEach((date, index) => {
     if (date >= rangeStart && date <= rangeEnd) {
       hits.push({ date, index });
     }
@@ -27,14 +40,31 @@ export function installmentsInRange(
   return hits;
 }
 
-function planDates(plan: InstallmentPlan): string[] {
-  return installmentDates(plan);
-}
-
-export function signedAmountForInstallment(plan: InstallmentPlan): number {
+export function signedAmountForInstallment(plan: InstallmentPlan, account?: AccountDef): number {
+  const ea =
+    account?.installmentInterestEA ?? account?.interestRateEA ?? 0;
+  if (ea > 0 && plan.billingMode !== 'calendar') {
+    const withInt = estimateInstallmentWithInterest(
+      plan.totalAmount,
+      plan.installmentCount,
+      ea,
+    );
+    return -withInt;
+  }
   return -plan.perInstallment;
 }
 
-export function installmentTitle(plan: InstallmentPlan, index: number): string {
-  return `${plan.title} (${index + 1}/${plan.installmentCount})`;
+export function installmentTitle(plan: InstallmentPlan, index: number, account?: AccountDef): string {
+  const base = `${plan.title} (${index + 1}/${plan.installmentCount})`;
+  if (account?.statementCloseDay && shouldUseStatementBilling(plan, account)) {
+    return `${base} · corte`;
+  }
+  return base;
+}
+
+export function resolveInstallmentAccount(
+  plan: InstallmentPlan,
+  accounts: AccountDef[],
+): AccountDef | undefined {
+  return accountDefByName(accounts, plan.account);
 }

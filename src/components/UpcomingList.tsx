@@ -25,7 +25,7 @@ export function UpcomingList({ items }: Props) {
             </Text>
             <Text style={styles.meta}>
               {item.account}
-              {item.kind === 'card_due' ? ' · recordatorio' : ''}
+              {item.subtitle ? ` · ${item.subtitle}` : item.kind === 'card_due' ? ' · recordatorio' : ''}
             </Text>
           </View>
           {item.signedAmount !== 0 ? (

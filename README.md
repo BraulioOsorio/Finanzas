@@ -41,6 +41,7 @@ El modelo de datos y pantallas siguen la lógica de **[NEKO: Control de Gastos](
 - **Importar y exportar CSV de Neko** (pestaña Importar): mismo formato de columnas que el export de NEKO
 - **Compra a meses** (Registrar): divide el total en cuotas mensuales; aparecen en Plan y Calendario
 - **Próximos 14 días** en Inicio: plan, cuotas y recordatorio de pago de tarjeta (sin push todavía)
+- **Tarjetas Colombia**: corte, gracia corte→pago, EA rotativo/cuotas, extracto estimado y compras a meses ligadas al **corte** (ver [`docs/CREDITO-CO.md`](docs/CREDITO-CO.md))
 - Campos guardados: fecha, tipo, descripción, cuenta, grupo/categoría, notas
 - Las transferencias y pagos de tarjeta se listan pero **no mueven el saldo** (como en un libro mayor)
 - **Iconos configurables** en Ajustes: categoría Neko (default), comercio por descripción, o banco/cuenta; pestaña Cuentas siempre muestra el banco

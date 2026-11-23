@@ -18,6 +18,7 @@ import {
   defaultLiquidForKind,
   inferAccountKind,
 } from '../domain/accounts/inferAccountKind';
+import { matchCreditPreset } from '../domain/credit/creditPresets';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
 import type { AccountDef, AccountDefDraft, AccountKind } from '../types';
@@ -41,6 +42,10 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
   const [creditLimit, setCreditLimit] = useState('');
   const [statementCloseDay, setStatementCloseDay] = useState('');
   const [paymentDueDay, setPaymentDueDay] = useState('');
+  const [paymentDueOffsetDays, setPaymentDueOffsetDays] = useState('');
+  const [interestRateEA, setInterestRateEA] = useState('');
+  const [installmentInterestEA, setInstallmentInterestEA] = useState('');
+  const [minimumPaymentPercent, setMinimumPaymentPercent] = useState('');
   const [saving, setSaving] = useState(false);
 
   const parseDay = (raw: string): number | undefined => {
@@ -63,6 +68,16 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       setCreditLimit(editing.creditLimit ? String(editing.creditLimit) : '');
       setStatementCloseDay(editing.statementCloseDay ? String(editing.statementCloseDay) : '');
       setPaymentDueDay(editing.paymentDueDay ? String(editing.paymentDueDay) : '');
+      setPaymentDueOffsetDays(
+        editing.paymentDueOffsetDays ? String(editing.paymentDueOffsetDays) : '',
+      );
+      setInterestRateEA(editing.interestRateEA != null ? String(editing.interestRateEA) : '');
+      setInstallmentInterestEA(
+        editing.installmentInterestEA != null ? String(editing.installmentInterestEA) : '',
+      );
+      setMinimumPaymentPercent(
+        editing.minimumPaymentPercent != null ? String(editing.minimumPaymentPercent) : '',
+      );
     } else {
       const seed = initialName?.trim() ?? '';
       setName(seed);
@@ -73,8 +88,56 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       setCreditLimit('');
       setStatementCloseDay('');
       setPaymentDueDay('');
+      setPaymentDueOffsetDays('');
+      setInterestRateEA('');
+      setInstallmentInterestEA('');
+      setMinimumPaymentPercent('');
     }
   }, [visible, editing, initialName]);
+
+  const applyPresetFields = () => {
+    const hit = matchCreditPreset(name);
+    if (!hit) {
+      Alert.alert('Sin plantilla', 'No hay valores típicos para este nombre. Prueba RappiCard, Nu, Bancolombia…');
+      return;
+    }
+    const p = hit.preset;
+    if (p.statementCloseDay) {
+      setStatementCloseDay(String(p.statementCloseDay));
+    }
+    if (p.paymentDueDay) {
+      setPaymentDueDay(String(p.paymentDueDay));
+    }
+    if (p.paymentDueOffsetDays) {
+      setPaymentDueOffsetDays(String(p.paymentDueOffsetDays));
+    }
+    if (p.interestRateEA != null) {
+      setInterestRateEA(String(p.interestRateEA));
+    }
+    if (p.installmentInterestEA != null) {
+      setInstallmentInterestEA(String(p.installmentInterestEA));
+    }
+    if (p.minimumPaymentPercent != null) {
+      setMinimumPaymentPercent(String(p.minimumPaymentPercent));
+    }
+    Alert.alert('Plantilla aplicada', `Valores orientativos ${hit.label}. Revisa con tu extracto real.`);
+  };
+
+  const parseEa = (raw: string): number | undefined => {
+    const n = Number(raw.replace(',', '.'));
+    if (!Number.isFinite(n) || n < 0) {
+      return undefined;
+    }
+    return n;
+  };
+
+  const parsePct = (raw: string): number | undefined => {
+    const n = Number(raw.replace(',', '.'));
+    if (!Number.isFinite(n) || n <= 0 || n > 100) {
+      return undefined;
+    }
+    return n;
+  };
 
   const onChangeKind = (k: AccountKind) => {
     setKind(k);
@@ -114,6 +177,11 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
       creditLimit: kind === 'credit' && limit > 0 ? limit : undefined,
       statementCloseDay: kind === 'credit' ? parseDay(statementCloseDay) : undefined,
       paymentDueDay: kind === 'credit' ? parseDay(paymentDueDay) : undefined,
+      paymentDueOffsetDays:
+        kind === 'credit' ? parseDay(paymentDueOffsetDays) : undefined,
+      interestRateEA: kind === 'credit' ? parseEa(interestRateEA) : undefined,
+      installmentInterestEA: kind === 'credit' ? parseEa(installmentInterestEA) : undefined,
+      minimumPaymentPercent: kind === 'credit' ? parsePct(minimumPaymentPercent) : undefined,
     };
 
     setSaving(true);
@@ -192,6 +260,14 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
                 placeholder="Ej. 5000000"
                 placeholderTextColor={colors.textMuted}
               />
+              <Pressable style={styles.presetBtn} onPress={applyPresetFields}>
+                <Text style={styles.presetText}>Valores típicos Colombia (RappiCard, Nu…)</Text>
+              </Pressable>
+              <Text style={styles.creditNote}>
+                En Colombia el extracto cierra en el día de corte; el pago suele vencer ~15–22 días
+                después (o un día fijo del mes). La tasa EA aplica al saldo rotativo; las cuotas pueden
+                tener otra tasa.
+              </Text>
               <View style={styles.row2}>
                 <View style={styles.half}>
                   <Text style={styles.label}>Día corte (1-28)</Text>
@@ -212,6 +288,54 @@ export function AccountEditorModal({ visible, editing, initialName, onClose }: P
                     value={paymentDueDay}
                     onChangeText={setPaymentDueDay}
                     placeholder="5"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+              </View>
+              <View style={styles.row2}>
+                <View style={styles.half}>
+                  <Text style={styles.label}>Días corte → pago</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType="number-pad"
+                    value={paymentDueOffsetDays}
+                    onChangeText={setPaymentDueOffsetDays}
+                    placeholder="16"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+                <View style={styles.half}>
+                  <Text style={styles.label}>% pago mínimo</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType="decimal-pad"
+                    value={minimumPaymentPercent}
+                    onChangeText={setMinimumPaymentPercent}
+                    placeholder="10"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+              </View>
+              <View style={styles.row2}>
+                <View style={styles.half}>
+                  <Text style={styles.label}>EA rotativo %</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType="decimal-pad"
+                    value={interestRateEA}
+                    onChangeText={setInterestRateEA}
+                    placeholder="24.9"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+                <View style={styles.half}>
+                  <Text style={styles.label}>EA cuotas %</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType="decimal-pad"
+                    value={installmentInterestEA}
+                    onChangeText={setInstallmentInterestEA}
+                    placeholder="0"
                     placeholderTextColor={colors.textMuted}
                   />
                 </View>
@@ -292,6 +416,17 @@ const styles = StyleSheet.create({
   switchHint: { color: colors.textMuted, fontSize: 12, lineHeight: 16 },
   row2: { flexDirection: 'row', gap: 10 },
   half: { flex: 1 },
+  presetBtn: {
+    marginTop: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  presetText: { color: colors.accent, fontWeight: '700', fontSize: 13 },
+  creditNote: { color: colors.textMuted, fontSize: 12, lineHeight: 17 },
   save: {
     marginTop: 16,
     backgroundColor: colors.accent,

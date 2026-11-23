@@ -25,6 +25,14 @@ export type AccountDef = {
   statementCloseDay?: number;
   /** Día límite de pago (1–28) */
   paymentDueDay?: number;
+  /** Días de gracia tras el corte hasta el pago (alternativa al día fijo; habitual en CO) */
+  paymentDueOffsetDays?: number;
+  /** Tasa EA % sobre saldo rotativo (compra corriente) */
+  interestRateEA?: number;
+  /** Tasa EA % en compras a cuotas (0 si promoción sin interés) */
+  installmentInterestEA?: number;
+  /** % mínimo de pago sobre extracto (orientativo) */
+  minimumPaymentPercent?: number;
 };
 
 /** Presupuesto mensual por grupo o categoría Neko */
@@ -50,6 +58,12 @@ export type InstallmentPlan = {
   categoryGroup: string;
   category: string;
   startDate: string;
+  /** Fecha de compra (p. ej. primer cargo) */
+  purchaseDate?: string;
+  /** calendar = día fijo; card_statement = en cada corte de tarjeta */
+  billingMode?: 'calendar' | 'card_statement';
+  /** Meses hasta la 1.ª cuota en extracto (1 = extracto siguiente a la compra) */
+  statementLagMonths?: number;
   active: boolean;
 };
 
