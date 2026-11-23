@@ -6,7 +6,7 @@ function addDays(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function addMonths(iso: string, months: number): string {
+export function addMonths(iso: string, months: number): string {
   const d = new Date(`${iso}T12:00:00`);
   d.setMonth(d.getMonth() + months);
   return d.toISOString().slice(0, 10);

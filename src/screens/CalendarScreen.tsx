@@ -27,14 +27,21 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 }
 
 export function CalendarScreen() {
-  const { transactions, accountNames, scheduledPayments } = useTransactions();
+  const { transactions, accountNames, scheduledPayments, installmentPlans } = useTransactions();
   const [monthKey, setMonthKey] = useState(monthKeyFromDate(new Date()));
   const [accountFilter, setAccountFilter] = useState<string | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const { days, startPadding } = useMemo(
-    () => buildMonthCalendar(transactions, monthKey, accountFilter, scheduledPayments),
-    [transactions, monthKey, accountFilter, scheduledPayments],
+    () =>
+      buildMonthCalendar(
+        transactions,
+        monthKey,
+        accountFilter,
+        scheduledPayments,
+        installmentPlans,
+      ),
+    [transactions, monthKey, accountFilter, scheduledPayments, installmentPlans],
   );
 
   const selected = selectedDate ? days.find((d) => d.date === selectedDate) : undefined;

@@ -1,5 +1,10 @@
+import {
+  installmentsInRange,
+  installmentTitle,
+  signedAmountForInstallment,
+} from './installments';
 import { occurrencesInRange, signedAmountForScheduled } from './scheduleProjection';
-import type { ScheduledPayment, Transaction } from '../types';
+import type { InstallmentPlan, ScheduledPayment, Transaction } from '../types';
 
 export type DayScheduledItem = {
   id: string;
@@ -51,11 +56,33 @@ export function weekdayIndexMonFirst(isoDate: string): number {
 
 function scheduledByDate(
   items: ScheduledPayment[],
+  installmentPlans: InstallmentPlan[],
   monthStart: string,
   monthEnd: string,
   accountFilter?: string,
 ): Map<string, DayScheduledItem[]> {
   const map = new Map<string, DayScheduledItem[]>();
+
+  for (const plan of installmentPlans) {
+    if (!plan.active) {
+      continue;
+    }
+    if (accountFilter && plan.account.trim() !== accountFilter) {
+      continue;
+    }
+    const hits = installmentsInRange(plan, monthStart, monthEnd);
+    const signed = signedAmountForInstallment(plan);
+    for (const { date, index } of hits) {
+      const list = map.get(date) ?? [];
+      list.push({
+        id: `ins-${plan.id}-${date}`,
+        title: installmentTitle(plan, index),
+        signedAmount: signed,
+        account: plan.account,
+      });
+      map.set(date, list);
+    }
+  }
 
   for (const item of items) {
     if (!item.active) {
@@ -86,6 +113,7 @@ export function buildMonthCalendar(
   monthKey: string,
   accountFilter?: string,
   scheduled: ScheduledPayment[] = [],
+  installmentPlans: InstallmentPlan[] = [],
   todayIso?: string,
 ): { days: DaySnapshot[]; startPadding: number } {
   const today = todayIso ?? new Date().toISOString().slice(0, 10);
@@ -111,7 +139,13 @@ export function buildMonthCalendar(
 
   const totalDays = daysInMonth(monthKey);
   const monthEnd = padDay(monthKey, totalDays);
-  const scheduledMap = scheduledByDate(scheduled, monthStart, monthEnd, accountFilter);
+  const scheduledMap = scheduledByDate(
+    scheduled,
+    installmentPlans,
+    monthStart,
+    monthEnd,
+    accountFilter,
+  );
 
   const days: DaySnapshot[] = [];
 

@@ -26,6 +26,8 @@ import { loadAccounts, saveAccounts } from '../storage/accounts';
 import { loadBudgets, saveBudgets } from '../storage/budgets';
 import { loadCategoryTree, saveCategoryTree, type CategoryTree } from '../storage/categoryTree';
 import { applyImport, parseNekoCsv } from '../import/parseNekoCsv';
+import { buildUpcoming, type UpcomingItem } from '../domain/upcoming';
+import { loadInstallmentPlans, saveInstallmentPlans } from '../storage/installments';
 import { loadScheduledPayments, saveScheduledPayments } from '../storage/scheduled';
 import { loadTransactions, saveTransactions } from '../storage/transactions';
 import { classifyNekoType } from '../import/nekoMapping';
@@ -35,6 +37,8 @@ import type {
   CategoryBudget,
   CategoryBudgetDraft,
   ImportResult,
+  InstallmentPlan,
+  InstallmentPlanDraft,
   ScheduledPayment,
   ScheduledPaymentDraft,
   Transaction,
@@ -84,6 +88,11 @@ type TransactionsContextValue = {
   addScheduledPayment: (draft: ScheduledPaymentDraft) => Promise<void>;
   removeScheduledPayment: (id: string) => Promise<void>;
   toggleScheduledPayment: (id: string, active: boolean) => Promise<void>;
+  installmentPlans: InstallmentPlan[];
+  addInstallmentPlan: (draft: InstallmentPlanDraft) => Promise<void>;
+  removeInstallmentPlan: (id: string) => Promise<void>;
+  toggleInstallmentPlan: (id: string, active: boolean) => Promise<void>;
+  upcomingItems: UpcomingItem[];
 };
 
 const TransactionsContext = createContext<TransactionsContextValue | null>(null);
@@ -97,6 +106,7 @@ function sortByDateDesc(items: Transaction[]): Transaction[] {
 export function TransactionsProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
+  const [installmentPlans, setInstallmentPlans] = useState<InstallmentPlan[]>([]);
   const [accounts, setAccounts] = useState<AccountDef[]>([]);
   const [categoryTree, setCategoryTreeState] = useState<CategoryTree>({});
   const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
@@ -105,9 +115,10 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [stored, scheduled, accs, tree, budgetList] = await Promise.all([
+      const [stored, scheduled, installments, accs, tree, budgetList] = await Promise.all([
         loadTransactions(),
         loadScheduledPayments(),
+        loadInstallmentPlans(),
         loadAccounts(),
         loadCategoryTree(),
         loadBudgets(),
@@ -116,6 +127,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         const sorted = sortByDateDesc(stored);
         setTransactions(sorted);
         setScheduledPayments(scheduled);
+        setInstallmentPlans(installments);
         setAccounts(accs);
         setCategoryTreeState(tree);
         setBudgets(budgetList);
@@ -411,6 +423,43 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [persistScheduled, scheduledPayments],
   );
 
+  const persistInstallments = useCallback(async (next: InstallmentPlan[]) => {
+    setInstallmentPlans(next);
+    await saveInstallmentPlans(next);
+  }, []);
+
+  const addInstallmentPlan = useCallback(
+    async (draft: InstallmentPlanDraft) => {
+      const entry: InstallmentPlan = {
+        ...draft,
+        id: `ins-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      };
+      await persistInstallments([entry, ...installmentPlans]);
+    },
+    [persistInstallments, installmentPlans],
+  );
+
+  const removeInstallmentPlan = useCallback(
+    async (id: string) => {
+      await persistInstallments(installmentPlans.filter((p) => p.id !== id));
+    },
+    [persistInstallments, installmentPlans],
+  );
+
+  const toggleInstallmentPlan = useCallback(
+    async (id: string, active: boolean) => {
+      await persistInstallments(
+        installmentPlans.map((p) => (p.id === id ? { ...p, active } : p)),
+      );
+    },
+    [persistInstallments, installmentPlans],
+  );
+
+  const upcomingItems = useMemo(
+    () => buildUpcoming(scheduledPayments, installmentPlans, accounts),
+    [scheduledPayments, installmentPlans, accounts],
+  );
+
   const importNekoCsv = useCallback(
     async (csv: string, mode: 'replace' | 'merge'): Promise<ImportResult> => {
       const { transactions: incoming, errors: parseErrors } = parseNekoCsv(csv);
@@ -514,6 +563,11 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       addScheduledPayment,
       removeScheduledPayment,
       toggleScheduledPayment,
+      installmentPlans,
+      addInstallmentPlan,
+      removeInstallmentPlan,
+      toggleInstallmentPlan,
+      upcomingItems,
     }),
     [
       transactions,
@@ -549,6 +603,11 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       addScheduledPayment,
       removeScheduledPayment,
       toggleScheduledPayment,
+      installmentPlans,
+      addInstallmentPlan,
+      removeInstallmentPlan,
+      toggleInstallmentPlan,
+      upcomingItems,
     ],
   );
 

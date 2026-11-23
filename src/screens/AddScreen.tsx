@@ -24,8 +24,16 @@ import type { ScheduleFrequency, TransactionKind } from '../types';
 
 const RECURRENCE_FREQUENCIES: ScheduleFrequency[] = ['monthly', 'biweekly', 'weekly', 'once'];
 
+const INSTALLMENT_COUNTS = [3, 6, 12, 18, 24] as const;
+
 export function AddScreen() {
-  const { addTransaction, addScheduledPayment, addTransferPair, accountNames } = useTransactions();
+  const {
+    addTransaction,
+    addScheduledPayment,
+    addInstallmentPlan,
+    addTransferPair,
+    accountNames,
+  } = useTransactions();
   const { UNCATEGORIZED_GROUP, categoriesForGroup, allCategoryGroups } = useNekoCatalog();
   const [nekoType, setNekoType] = useState<string>('Gasto');
   const [account, setAccount] = useState(accountNames[0] ?? 'Efectivo');
@@ -42,8 +50,13 @@ export function AddScreen() {
     accountNames[1] ?? accountNames[0] ?? 'Ahorro',
   );
   const [transferPair, setTransferPair] = useState(true);
+  const [installmentCount, setInstallmentCount] = useState(6);
+  const [installmentStartDate, setInstallmentStartDate] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
 
   const kind: TransactionKind = classifyNekoType(nekoType);
+  const isInstallmentPurchase = nekoType === 'Compra a meses';
   const categories = useMemo(
     () => categoriesForGroup(categoryGroup),
     [categoryGroup, categoriesForGroup],
@@ -64,6 +77,10 @@ export function AddScreen() {
       setCategoryGroup(UNCATEGORIZED_GROUP);
       setCategory('');
       setTransferPair(type === 'Transferencia');
+    } else if (type === 'Compra a meses') {
+      setCategoryGroup('Extras');
+      setCategory('Compra a meses');
+      setRepeatEnabled(false);
     }
   };
 
@@ -75,6 +92,11 @@ export function AddScreen() {
     }
     if (!description.trim() && !notes.trim()) {
       Alert.alert('Descripción', 'Escribe al menos una descripción o nota.');
+      return;
+    }
+
+    if (isInstallmentPurchase && !/^\d{4}-\d{2}-\d{2}$/.test(installmentStartDate)) {
+      Alert.alert('Compra a meses', 'Fecha de la primera cuota inválida (AAAA-MM-DD).');
       return;
     }
 
@@ -97,6 +119,44 @@ export function AddScreen() {
     try {
       const group = categoryGroup === UNCATEGORIZED_GROUP ? '' : categoryGroup;
       const cat = category || nekoType;
+
+      if (isInstallmentPurchase) {
+        const per = Math.round(parsed / installmentCount);
+        const title = description.trim() || 'Compra a meses';
+        await addTransaction({
+          kind: 'expense',
+          type: 'expense',
+          amount: per,
+          signedAmount: -per,
+          postedDate: installmentStartDate,
+          nekoType,
+          description: `${title} (1/${installmentCount})`,
+          account,
+          categoryGroup: group,
+          category: cat,
+          notes: notes.trim(),
+          source: 'manual',
+        });
+        await addInstallmentPlan({
+          title,
+          totalAmount: parsed,
+          installmentCount,
+          perInstallment: per,
+          account,
+          categoryGroup: group,
+          category: cat,
+          startDate: installmentStartDate,
+          active: true,
+        });
+        setAmount('');
+        setDescription('');
+        setNotes('');
+        Alert.alert(
+          'Listo',
+          `Compra a ${installmentCount} cuotas de ~${per.toLocaleString('es-CO')} COP. Proyección en Calendario y Plan.`,
+        );
+        return;
+      }
 
       if (nekoType === 'Transferencia' && transferPair) {
         await addTransferPair({
@@ -299,11 +359,50 @@ export function AddScreen() {
             </Text>
           )}
 
-          <Text style={styles.label}>Monto (COP)</Text>
+          {isInstallmentPurchase ? (
+            <View style={styles.repeatBlock}>
+              <Text style={styles.repeatTitle}>Cuotas</Text>
+              <Text style={styles.repeatHint}>
+                El monto total se divide en cuotas mensuales (se registra la primera cuota hoy o en la
+                fecha que elijas).
+              </Text>
+              <View style={styles.chipWrap}>
+                {INSTALLMENT_COUNTS.map((n) => (
+                  <Pressable
+                    key={n}
+                    style={[
+                      styles.categoryChip,
+                      installmentCount === n && styles.categoryChipActive,
+                    ]}
+                    onPress={() => setInstallmentCount(n)}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        installmentCount === n && styles.categoryChipTextActive,
+                      ]}
+                    >
+                      {n} meses
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={styles.label}>Primera cuota (AAAA-MM-DD)</Text>
+              <TextInput
+                style={styles.input}
+                value={installmentStartDate}
+                onChangeText={setInstallmentStartDate}
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="none"
+              />
+            </View>
+          ) : null}
+
+          <Text style={styles.label}>{isInstallmentPurchase ? 'Monto total (COP)' : 'Monto (COP)'}</Text>
           <TextInput
             style={styles.input}
             keyboardType="number-pad"
-            placeholder="Ej. 85000"
+            placeholder={isInstallmentPurchase ? 'Ej. 1200000' : 'Ej. 85000'}
             placeholderTextColor={colors.textMuted}
             value={amount}
             onChangeText={setAmount}
@@ -318,7 +417,7 @@ export function AddScreen() {
             onChangeText={setDescription}
           />
 
-          {kind !== 'transfer' ? (
+          {kind !== 'transfer' && !isInstallmentPurchase ? (
             <View style={styles.repeatBlock}>
               <View style={styles.repeatRow}>
                 <View style={styles.repeatTextCol}>

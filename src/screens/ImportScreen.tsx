@@ -1,11 +1,13 @@
 import * as DocumentPicker from 'expo-document-picker';
-import { File } from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -14,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { suggestRecurringFromTransactions } from '../domain/suggestRecurringFromTransactions';
 import { useTransactions } from '../context/TransactionsContext';
+import { transactionsToNekoCsv } from '../export/nekoCsvExport';
 import { colors } from '../theme';
 
 const NEKO_FORMAT = `Posted Date,Transaction Type,Description,Amount,Account,Category Group,Category,Notes`;
@@ -118,10 +121,51 @@ export function ImportScreen() {
     await runImport(csv, mode);
   };
 
+  const exportCsv = async () => {
+    if (!transactionCount) {
+      Alert.alert('Sin datos', 'No hay movimientos para exportar.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const csv = transactionsToNekoCsv(transactions);
+      const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const fileName = `finanzas_transactions_${stamp}.csv`;
+      const outFile = new File(Paths.cache, fileName);
+      outFile.create({ overwrite: true });
+      await outFile.write(csv);
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = fileName;
+        anchor.click();
+        URL.revokeObjectURL(url);
+        Alert.alert('Exportado', `${transactionCount} filas descargadas.`);
+        return;
+      }
+
+      const shared = await Share.share({
+        title: fileName,
+        message: csv.length < 60000 ? csv : `Export Neko: ${fileName}`,
+        url: outFile.uri,
+      });
+      if (shared.action === Share.sharedAction) {
+        Alert.alert('Exportado', `${transactionCount} movimientos en formato Neko.`);
+      }
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'No se pudo exportar.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Importar Neko</Text>
+        <Text style={styles.title}>Importar / exportar Neko</Text>
         <Text style={styles.subtitle}>
           Carga un export CSV de Neko con el mismo formato de columnas que ya usas.
         </Text>
@@ -162,6 +206,14 @@ export function ImportScreen() {
           disabled={busy || transactionCount === 0}
         >
           <Text style={styles.buttonSecondaryText}>Sugerir recurrentes al Plan (desde historial)</Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.button, styles.buttonPrimary, busy && styles.buttonDisabled]}
+          onPress={exportCsv}
+          disabled={busy || transactionCount === 0}
+        >
+          <Text style={styles.buttonPrimaryText}>Exportar CSV (formato Neko)</Text>
         </Pressable>
 
         <Text style={styles.footer}>

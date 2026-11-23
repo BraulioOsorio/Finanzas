@@ -39,6 +39,22 @@ export type CategoryBudget = {
 
 export type CategoryBudgetDraft = Omit<CategoryBudget, 'id'>;
 
+/** Compra a meses: cuotas proyectadas en calendario */
+export type InstallmentPlan = {
+  id: string;
+  title: string;
+  totalAmount: number;
+  installmentCount: number;
+  perInstallment: number;
+  account: string;
+  categoryGroup: string;
+  category: string;
+  startDate: string;
+  active: boolean;
+};
+
+export type InstallmentPlanDraft = Omit<InstallmentPlan, 'id'>;
+
 export type AccountDefDraft = Omit<AccountDef, 'id'>;
 
 export type Transaction = {

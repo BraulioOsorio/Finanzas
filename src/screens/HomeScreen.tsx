@@ -5,6 +5,7 @@ import { AccountBalanceRow } from '../components/AccountBalanceRow';
 import { BudgetProgressList } from '../components/BudgetProgressList';
 import { CreditCardSummaryList } from '../components/CreditCardSummaryList';
 import { TransactionRow } from '../components/TransactionRow';
+import { UpcomingList } from '../components/UpcomingList';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
 import { formatCurrency } from '../utils/format';
@@ -20,6 +21,7 @@ export function HomeScreen() {
     transferCount,
     budgetProgress,
     creditCardSummaries,
+    upcomingItems,
   } = useTransactions();
   const recent = transactions.slice(0, 5);
   const topAccounts = accountBalances.slice(0, 4);
@@ -70,6 +72,7 @@ export function HomeScreen() {
 
           <CreditCardSummaryList cards={creditCardSummaries} />
           <BudgetProgressList items={budgetProgress} />
+          <UpcomingList items={upcomingItems} />
         </View>
 
         {topAccounts.length > 0 ? (

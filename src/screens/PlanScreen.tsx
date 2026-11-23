@@ -20,7 +20,7 @@ import { useNekoCatalog } from '../hooks/useNekoCatalog';
 import { scheduleFrequencyLabel } from '../domain/scheduleProjection';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
-import type { ScheduleFrequency, ScheduledPayment } from '../types';
+import type { InstallmentPlan, ScheduleFrequency, ScheduledPayment } from '../types';
 import { formatCurrency } from '../utils/format';
 
 const FREQUENCIES: ScheduleFrequency[] = ['monthly', 'biweekly', 'weekly', 'once'];
@@ -33,6 +33,9 @@ export function PlanScreen() {
     addScheduledPayment,
     removeScheduledPayment,
     toggleScheduledPayment,
+    installmentPlans,
+    removeInstallmentPlan,
+    toggleInstallmentPlan,
     accountNames,
   } = useTransactions();
 
@@ -97,6 +100,17 @@ export function PlanScreen() {
         text: 'Eliminar',
         style: 'destructive',
         onPress: () => removeScheduledPayment(item.id),
+      },
+    ]);
+  };
+
+  const confirmDeleteInstallment = (item: InstallmentPlan) => {
+    Alert.alert('Eliminar', `¿Quitar la compra a meses "${item.title}"?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: () => removeInstallmentPlan(item.id),
       },
     ]);
   };
@@ -293,6 +307,40 @@ export function PlanScreen() {
           );
         }}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        ListFooterComponent={
+          installmentPlans.length > 0 ? (
+            <View style={styles.footerSection}>
+              <Text style={styles.footerTitle}>Compras a meses</Text>
+              <Text style={styles.footerHint}>
+                Cuotas mensuales proyectadas en el calendario (regístralas en Registrar → Compra a
+                meses).
+              </Text>
+              {installmentPlans.map((item) => (
+                <View key={item.id} style={styles.row}>
+                  <View style={styles.rowMain}>
+                    <Text style={styles.rowTitle}>{item.title}</Text>
+                    <Text style={styles.rowMeta}>
+                      {item.installmentCount} cuotas · {item.account} · desde {item.startDate}
+                    </Text>
+                    <Text style={[styles.rowAmount, styles.amountExpense]}>
+                      −{formatCurrency(item.perInstallment)} / mes · total{' '}
+                      {formatCurrency(item.totalAmount)}
+                    </Text>
+                  </View>
+                  <View style={styles.rowActions}>
+                    <Switch
+                      value={item.active}
+                      onValueChange={(v) => toggleInstallmentPlan(item.id, v)}
+                    />
+                    <Pressable onPress={() => confirmDeleteInstallment(item)}>
+                      <Text style={styles.delete}>Eliminar</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : undefined
+        }
       />
     </SafeAreaView>
   );
@@ -385,4 +433,7 @@ const styles = StyleSheet.create({
   amountExpense: { color: colors.expense },
   rowActions: { alignItems: 'flex-end', justifyContent: 'space-between' },
   delete: { color: colors.expense, fontSize: 12, marginTop: 8 },
+  footerSection: { marginTop: 24, gap: 10 },
+  footerTitle: { color: colors.text, fontSize: 18, fontWeight: '800' },
+  footerHint: { color: colors.textMuted, fontSize: 13, lineHeight: 18, marginBottom: 4 },
 });
