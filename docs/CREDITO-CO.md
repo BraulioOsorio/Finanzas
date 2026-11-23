@@ -32,6 +32,6 @@ Al crear/editar cuenta tipo crédito: **Valores típicos Colombia**. Coincidenci
 
 - No modela avances, seguros, IVA de intereses, ni día hábil exacto del banco.
 - Los pagos de tarjeta del CSV deben ser tipo **Pago de Tarjeta** en ambas cuentas para restar del periodo.
-- Tras importar CSV o con el botón en Importar, se crean planes desde tipo **Compra a meses** (cuotas estimadas; edítalas en Plan).
+- Tras importar CSV, el tipo **Compra a meses** no trae número de cuotas ni cuántas faltan (comprobado en export Neko; Nu tampoco). La app estima y marca **Revisa cuotas** hasta que lo confirmes en Plan.
 - Recordatorios locales opcionales en Ajustes (un día antes de corte/pago/cuota).
 - Bloque **Hoy** en Inicio con movimientos del día y vista de mañana.

@@ -77,7 +77,7 @@ export function ImportScreen() {
       .join('\n');
     Alert.alert(
       '¿Sincronizar compras a meses?',
-      `Desde tu CSV (tipo Compra a meses). Ajusta cuotas en Plan si no coinciden con el banco:\n\n${preview}${suggestions.length > 5 ? `\n… y ${suggestions.length - 5} más` : ''}`,
+      `Neko no exporta cuotas ni pendientes (normal en Nu). Creamos planes estimados; en Plan usa «Editar cuotas» con el dato del banco:\n\n${preview}${suggestions.length > 5 ? `\n… y ${suggestions.length - 5} más` : ''}`,
       [
         { text: 'Ahora no', style: 'cancel' },
         {

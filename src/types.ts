@@ -67,7 +67,22 @@ export type InstallmentPlan = {
   /** Meses hasta la 1.ª cuota en extracto (1 = extracto siguiente a la compra) */
   statementLagMonths?: number;
   active: boolean;
+  /** El CSV de Neko no trae # de cuotas; hay que confirmar en Plan */
+  needsCuotaReview?: boolean;
+  cuotaSource?: 'manual' | 'csv_inferred';
 };
+
+export type InstallmentPlanUpdate = Partial<
+  Pick<
+    InstallmentPlan,
+    | 'title'
+    | 'installmentCount'
+    | 'totalAmount'
+    | 'perInstallment'
+    | 'active'
+    | 'needsCuotaReview'
+  >
+>;
 
 export type InstallmentPlanDraft = Omit<InstallmentPlan, 'id'>;
 

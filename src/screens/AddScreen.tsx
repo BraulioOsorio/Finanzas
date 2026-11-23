@@ -161,6 +161,8 @@ export function AddScreen() {
             ? (cardDef?.installmentStatementLagMonths ?? 1)
             : 0,
           active: true,
+          needsCuotaReview: false,
+          cuotaSource: 'manual',
         });
         setAmount('');
         setDescription('');

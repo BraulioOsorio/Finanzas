@@ -13,6 +13,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandIcon } from '../components/BrandIcon';
+import { InstallmentPlanEditorModal } from '../components/InstallmentPlanEditorModal';
+import { accountDefByName } from '../domain/accounts/resolveAccounts';
+import { installmentProgress } from '../domain/installmentProgress';
 import { resolveDisplayIconForScheduled } from '../domain/icons/resolveDisplayIcon';
 import { usePreferences } from '../context/PreferencesContext';
 import { categoryDisplayLabel } from '../domain/categories/resolveCategoryIcon';
@@ -36,8 +39,11 @@ export function PlanScreen() {
     installmentPlans,
     removeInstallmentPlan,
     toggleInstallmentPlan,
+    accounts,
     accountNames,
   } = useTransactions();
+
+  const [installmentEditor, setInstallmentEditor] = useState<InstallmentPlan | null>(null);
 
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
@@ -312,20 +318,33 @@ export function PlanScreen() {
             <View style={styles.footerSection}>
               <Text style={styles.footerTitle}>Compras a meses</Text>
               <Text style={styles.footerHint}>
-                Cuotas mensuales proyectadas en el calendario (regístralas en Registrar → Compra a
-                meses).
+                El CSV de Neko no dice cuántas cuotas ni cuántas faltan. Tras importar, toca
+                «Editar cuotas» y pon el dato del banco (Nu, RappiCard, etc.).
               </Text>
-              {installmentPlans.map((item) => (
+              {installmentPlans.map((item) => {
+                const acc = accountDefByName(accounts, item.account);
+                const prog = installmentProgress(item, acc);
+                return (
                 <View key={item.id} style={styles.row}>
                   <View style={styles.rowMain}>
                     <Text style={styles.rowTitle}>{item.title}</Text>
+                    {item.needsCuotaReview ? (
+                      <Text style={styles.reviewBadge}>Revisa # cuotas (Neko no lo exporta)</Text>
+                    ) : null}
                     <Text style={styles.rowMeta}>
-                      {item.installmentCount} cuotas · {item.account} · desde {item.startDate}
+                      {prog.projectedThrough}/{prog.total} cortes · faltan ~{prog.remaining} ·{' '}
+                      {item.account}
                     </Text>
+                    {prog.nextDate ? (
+                      <Text style={styles.rowMeta}>Próx. cuota ~{prog.nextDate}</Text>
+                    ) : null}
                     <Text style={[styles.rowAmount, styles.amountExpense]}>
                       −{formatCurrency(item.perInstallment)} / mes · total{' '}
                       {formatCurrency(item.totalAmount)}
                     </Text>
+                    <Pressable onPress={() => setInstallmentEditor(item)}>
+                      <Text style={styles.editCuotas}>Editar cuotas</Text>
+                    </Pressable>
                   </View>
                   <View style={styles.rowActions}>
                     <Switch
@@ -337,10 +356,16 @@ export function PlanScreen() {
                     </Pressable>
                   </View>
                 </View>
-              ))}
+              );
+              })}
             </View>
           ) : undefined
         }
+      />
+      <InstallmentPlanEditorModal
+        visible={Boolean(installmentEditor)}
+        plan={installmentEditor}
+        onClose={() => setInstallmentEditor(null)}
       />
     </SafeAreaView>
   );
@@ -436,4 +461,6 @@ const styles = StyleSheet.create({
   footerSection: { marginTop: 24, gap: 10 },
   footerTitle: { color: colors.text, fontSize: 18, fontWeight: '800' },
   footerHint: { color: colors.textMuted, fontSize: 13, lineHeight: 18, marginBottom: 4 },
+  reviewBadge: { color: colors.expense, fontSize: 11, fontWeight: '700' },
+  editCuotas: { color: colors.accent, fontSize: 13, fontWeight: '700', marginTop: 6 },
 });

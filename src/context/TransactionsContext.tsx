@@ -44,6 +44,7 @@ import type {
   ImportResult,
   InstallmentPlan,
   InstallmentPlanDraft,
+  InstallmentPlanUpdate,
   ScheduledPayment,
   ScheduledPaymentDraft,
   Transaction,
@@ -97,6 +98,7 @@ type TransactionsContextValue = {
   addInstallmentPlan: (draft: InstallmentPlanDraft) => Promise<void>;
   removeInstallmentPlan: (id: string) => Promise<void>;
   toggleInstallmentPlan: (id: string, active: boolean) => Promise<void>;
+  updateInstallmentPlan: (id: string, update: InstallmentPlanUpdate) => Promise<void>;
   upcomingItems: UpcomingItem[];
   todayAgenda: ReturnType<typeof buildTodayAgenda>;
   tomorrowHeadline: UpcomingItem[];
@@ -468,6 +470,15 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [persistInstallments, installmentPlans],
   );
 
+  const updateInstallmentPlan = useCallback(
+    async (id: string, update: InstallmentPlanUpdate) => {
+      await persistInstallments(
+        installmentPlans.map((p) => (p.id === id ? { ...p, ...update } : p)),
+      );
+    },
+    [persistInstallments, installmentPlans],
+  );
+
   const upcomingItems = useMemo(
     () => buildUpcoming(scheduledPayments, installmentPlans, accounts, transactions),
     [scheduledPayments, installmentPlans, accounts, transactions],
@@ -605,6 +616,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       addInstallmentPlan,
       removeInstallmentPlan,
       toggleInstallmentPlan,
+      updateInstallmentPlan,
       upcomingItems,
       todayAgenda,
       tomorrowHeadline,
@@ -648,6 +660,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       addInstallmentPlan,
       removeInstallmentPlan,
       toggleInstallmentPlan,
+      updateInstallmentPlan,
       upcomingItems,
       todayAgenda,
       tomorrowHeadline,

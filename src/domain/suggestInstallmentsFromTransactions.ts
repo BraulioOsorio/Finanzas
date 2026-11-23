@@ -18,9 +18,13 @@ function parseInstallmentCountFromText(text: string): number | null {
   }
   const frac = blob.match(/(\d+)\s*\/\s*(\d+)/);
   if (frac) {
+    const current = Number(frac[1]);
     const total = Number(frac[2]);
     if (total >= 2 && total <= 72) {
       return total;
+    }
+    if (current >= 2 && current <= 72) {
+      return current;
     }
   }
   const cuotas = blob.match(/(\d+)\s*cuotas?\b/i);
@@ -40,6 +44,7 @@ function parseInstallmentCountFromText(text: string): number | null {
   return null;
 }
 
+/** Solo cuando Neko no dice nada: heurística por monto (no confiable en Nu, montos pequeños). */
 function guessInstallmentCount(totalAmount: number): number {
   if (totalAmount >= 3_000_000) {
     return 36;
@@ -72,33 +77,10 @@ function existingFingerprints(plans: InstallmentPlan[]): Set<string> {
   );
 }
 
-/** Si el mismo concepto aparece mes a mes, infiere cuotas observadas. */
-function observeRepeatCounts(transactions: Transaction[]): Map<string, number> {
-  const map = new Map<string, { dates: string[]; amounts: number[] }>();
-  for (const t of transactions) {
-    if (!isCompraAMeses(t)) {
-      continue;
-    }
-    const key = `${t.account.trim().toLowerCase()}|${normalizeTitle(t.description)}`;
-    const row = map.get(key) ?? { dates: [], amounts: [] };
-    row.dates.push(t.postedDate);
-    row.amounts.push(t.amount);
-    map.set(key, row);
-  }
-
-  const counts = new Map<string, number>();
-  for (const [key, row] of map) {
-    if (row.dates.length < 2) {
-      continue;
-    }
-    const uniqueMonths = new Set(row.dates.map((d) => d.slice(0, 7)));
-    if (uniqueMonths.size >= 2) {
-      counts.set(key, row.dates.length);
-    }
-  }
-  return counts;
-}
-
+/**
+ * El export Neko trae una fila por compra: tipo, monto, fecha, cuenta.
+ * No incluye cuotas totales, cuota actual ni pendientes (confirmado en CSV de usuario).
+ */
 export function suggestInstallmentsFromTransactions(
   transactions: Transaction[],
   accounts: AccountDef[],
@@ -106,7 +88,6 @@ export function suggestInstallmentsFromTransactions(
   today = new Date().toISOString().slice(0, 10),
 ): InstallmentSuggestion[] {
   const fps = existingFingerprints(existingPlans);
-  const repeats = observeRepeatCounts(transactions);
   const suggestions: InstallmentSuggestion[] = [];
   const seen = new Set<string>();
 
@@ -122,7 +103,6 @@ export function suggestInstallmentsFromTransactions(
       continue;
     }
 
-    // Ignorar compras muy antiguas sin cuotas pendientes plausibles ( > 5 años )
     if (purchaseDate < `${Number(today.slice(0, 4)) - 5}-01-01`) {
       continue;
     }
@@ -132,16 +112,9 @@ export function suggestInstallmentsFromTransactions(
       parseInstallmentCountFromText(t.description) ??
       parseInstallmentCountFromText(t.category);
 
-    const repeatKey = `${t.account.trim().toLowerCase()}|${normalizeTitle(t.description)}`;
-    const observed = repeats.get(repeatKey);
-
     const totalAmount = Math.round(t.amount);
-    let installmentCount =
-      meta ?? (observed && observed >= 2 ? Math.max(observed + 6, 12) : null) ?? guessInstallmentCount(totalAmount);
-
-    if (observed && observed > installmentCount) {
-      installmentCount = observed;
-    }
+    const installmentCount = meta ?? guessInstallmentCount(totalAmount);
+    const needsCuotaReview = meta == null;
 
     const def = accountDefByName(accounts, t.account);
     const onCredit = def?.kind === 'credit' && Boolean(def.statementCloseDay);
@@ -152,10 +125,8 @@ export function suggestInstallmentsFromTransactions(
       : Math.round(totalAmount / installmentCount);
 
     const reason = meta
-      ? `Notas/descr. indican ${installmentCount} cuotas`
-      : observed
-        ? `Vimos ${observed} cargos similares en el CSV`
-        : `Total ${totalAmount.toLocaleString('es-CO')} → ~${installmentCount} cuotas (estimado)`;
+      ? `CSV/notas: ${installmentCount} cuotas`
+      : `Neko no indica cuotas (ej. Nu). Estimamos ${installmentCount} por monto · confirma en Plan`;
 
     suggestions.push({
       title,
@@ -170,6 +141,8 @@ export function suggestInstallmentsFromTransactions(
       billingMode: onCredit ? 'card_statement' : 'calendar',
       statementLagMonths: lag,
       active: true,
+      needsCuotaReview,
+      cuotaSource: 'csv_inferred',
       reason,
       fingerprint: fp,
     });
