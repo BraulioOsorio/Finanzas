@@ -1,7 +1,10 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BrandIcon } from './BrandIcon';
-import { resolveBrandForTransaction } from '../domain/brands/resolveBrand';
+import {
+  categoryDisplayLabel,
+  resolveCategoryIconForTransaction,
+} from '../domain/categories/resolveCategoryIcon';
 import { colors } from '../theme';
 import type { Transaction } from '../types';
 import { formatCurrency, formatShortDate } from '../utils/format';
@@ -17,12 +20,12 @@ export function TransactionRow({ item, onDelete }: Props) {
   const sign = isTransfer ? (item.signedAmount >= 0 ? '+' : '−') : isIncome ? '+' : '−';
   const displayAmount = isTransfer ? Math.abs(item.signedAmount) : item.amount;
 
-  const brand = resolveBrandForTransaction(item);
-  const title = item.description || item.category || item.nekoType;
-  const metaParts = [item.account, item.nekoType, item.categoryGroup]
-    .map((p) => p.trim())
-    .filter(Boolean);
-  const metaExtra = item.notes ? item.notes.split('\n')[0] : formatShortDate(item.postedDate);
+  const brand = resolveCategoryIconForTransaction(item);
+  const title = item.description?.trim() || categoryDisplayLabel(item.categoryGroup, item.category, item.nekoType);
+  const categoryLine = categoryDisplayLabel(item.categoryGroup, item.category, item.nekoType);
+  const metaExtra = item.notes?.trim()
+    ? item.notes.split('\n')[0]
+    : formatShortDate(item.postedDate);
 
   return (
     <View style={styles.row}>
@@ -32,7 +35,7 @@ export function TransactionRow({ item, onDelete }: Props) {
           {title}
         </Text>
         <Text style={styles.meta} numberOfLines={2}>
-          {metaParts.length ? `${metaParts.join(' · ')} · ${metaExtra}` : metaExtra}
+          {categoryLine} · {item.account || '—'} · {metaExtra}
         </Text>
       </View>
       <View style={styles.trailing}>

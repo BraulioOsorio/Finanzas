@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { resolveBrandForTransaction } from '../src/domain/brands/resolveBrand';
+import { resolveCategoryIconForTransaction } from '../src/domain/categories/resolveCategoryIcon';
 import { parseNekoCsv } from '../src/import/parseNekoCsv';
 
 const csvPath = resolve(
@@ -15,26 +15,19 @@ if (errors.length) {
   process.exit(1);
 }
 
-const byDesc = new Map<string, { count: number; brandId: string }>();
 const generic = new Map<string, number>();
 
 for (const t of transactions) {
-  const desc = (t.description || '(vacío)').trim();
-  const brand = resolveBrandForTransaction(t);
-  const prev = byDesc.get(desc);
-  if (!prev) {
-    byDesc.set(desc, { count: 1, brandId: brand.id });
-  } else {
-    prev.count += 1;
-  }
-  if (brand.id === 'generic') {
-    generic.set(desc, (generic.get(desc) ?? 0) + 1);
+  const icon = resolveCategoryIconForTransaction(t);
+  if (icon.id === 'cat-generic') {
+    const key = `${t.categoryGroup || '?'} | ${t.category || '?'} | ${t.nekoType}`;
+    generic.set(key, (generic.get(key) ?? 0) + 1);
   }
 }
 
 const brandFreq = new Map<string, number>();
 for (const t of transactions) {
-  const id = resolveBrandForTransaction(t).id;
+  const id = resolveCategoryIconForTransaction(t).id;
   brandFreq.set(id, (brandFreq.get(id) ?? 0) + 1);
 }
 
@@ -43,9 +36,8 @@ console.log(
     {
       file: csvPath,
       rows: transactions.length,
-      uniqueDescriptions: byDesc.size,
       genericRows: [...generic.values()].reduce((a, b) => a + b, 0),
-      topGenericDescriptions: [...generic.entries()]
+      uncategorizedCategoryKeys: [...generic.entries()]
         .sort((a, b) => b[1] - a[1])
         .slice(0, 25),
       topBrands: [...brandFreq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 30),

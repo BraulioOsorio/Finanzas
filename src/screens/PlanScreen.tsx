@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandIcon } from '../components/BrandIcon';
-import { resolveBrandForScheduled } from '../domain/brands/resolveBrand';
+import { resolveCategoryIconForScheduled } from '../domain/categories/resolveCategoryIcon';
 import { scheduleFrequencyLabel } from '../domain/scheduleProjection';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
@@ -63,7 +63,7 @@ export function PlanScreen() {
         amount: parsed,
         account,
         nekoType: kind === 'income' ? 'Ingreso' : 'Pago',
-        categoryGroup: '',
+        categoryGroup: kind === 'income' ? 'Ingreso Principal' : 'Hogar y Servicios',
         category: kind === 'income' ? 'Salario' : 'Suscripciones',
         frequency,
         startDate,
@@ -200,7 +200,7 @@ export function PlanScreen() {
           </View>
         }
         renderItem={({ item }) => {
-          const brand = resolveBrandForScheduled(item);
+          const brand = resolveCategoryIconForScheduled(item);
           return (
           <View style={styles.row}>
             <BrandIcon brand={brand} size={42} />

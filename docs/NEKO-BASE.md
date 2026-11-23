@@ -13,6 +13,8 @@ NEKO ([nekomoney.app](https://www.nekomoney.app/es)) es una app **cerrada** (iOS
 |---------------|-------------|
 | Cuentas (Bancolombia, Efectivo, Nu, Deudas…) | Saldo por cuenta sumando `signedAmount` |
 | Grupo de categoría + categoría | `CATEGORY_TREE` en `src/domain/nekoCatalog.ts` |
+| Icono del movimiento = categoría | `src/domain/categories/` (no por descripción del comercio) |
+| Icono de la cuenta = banco | `src/domain/brands/` en pestaña Cuentas |
 | Tipos: Gasto, Ingreso, Pago, Transferencia… | Mismos tipos al registrar e importar |
 | Historial de transacciones | Pestaña Historial |
 | Calendario con saldo por día | Pestaña **Calendario** (proyección histórica; futuro con pagos programados) |
