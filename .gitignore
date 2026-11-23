@@ -6,3 +6,7 @@ reference/
 *.sqlite
 .env
 .DS_Store
+android/
+ios/
+build/
+.dart_tool/
