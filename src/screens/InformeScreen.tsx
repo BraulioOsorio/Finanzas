@@ -1,14 +1,34 @@
-import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AccountBalanceRow } from '../components/AccountBalanceRow';
 import { BudgetProgressList } from '../components/BudgetProgressList';
 import { useTransactions } from '../context/TransactionsContext';
+import { budgetProgressForMonth } from '../domain/budgets';
+import { formatMonthTitle } from '../domain/calendar';
 import { topCategorySpending } from '../domain/categorySpend';
+import { distinctMonthKeys } from '../domain/historyFilters';
 import { computeNetWorth } from '../domain/netWorth';
+import { currentMonthKey, monthRealFlow } from '../domain/summaries';
 import { colors } from '../theme';
 import { formatCurrency } from '../utils/format';
+
+function MonthChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable style={[styles.chip, active && styles.chipActive]} onPress={onPress}>
+      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+    </Pressable>
+  );
+}
 
 export function InformeScreen() {
   const {
@@ -20,7 +40,35 @@ export function InformeScreen() {
     budgetProgress,
     transactions,
     accounts,
+    budgets,
   } = useTransactions();
+
+  const [monthKey, setMonthKey] = useState(monthFlow.monthKey || currentMonthKey());
+
+  const months = useMemo(() => {
+    const keys = distinctMonthKeys(transactions);
+    const cur = currentMonthKey();
+    if (!keys.includes(cur)) {
+      return [cur, ...keys];
+    }
+    return keys;
+  }, [transactions]);
+
+  const selectedFlow = useMemo(
+    () =>
+      monthKey === monthFlow.monthKey
+        ? monthFlow
+        : monthRealFlow(transactions, monthKey),
+    [monthKey, monthFlow, transactions],
+  );
+
+  const selectedBudgetProgress = useMemo(
+    () =>
+      monthKey === monthFlow.monthKey
+        ? budgetProgress
+        : budgetProgressForMonth(budgets, transactions, monthKey),
+    [monthKey, monthFlow.monthKey, budgetProgress, budgets, transactions],
+  );
 
   const net = useMemo(
     () => computeNetWorth(accounts, accountBalances, creditCardSummaries, debtSummaries),
@@ -28,22 +76,32 @@ export function InformeScreen() {
   );
 
   const topCats = useMemo(
-    () => topCategorySpending(transactions, monthFlow.monthKey, 10),
-    [transactions, monthFlow.monthKey],
+    () => topCategorySpending(transactions, monthKey, 10),
+    [transactions, monthKey],
   );
 
   const maxCat = topCats[0]?.spent ?? 1;
+  const monthTitle = formatMonthTitle(monthKey);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Informe</Text>
         <Text style={styles.subtitle}>
-          Vista tipo Neko: patrimonio, mes actual ({monthFlow.monthKey}) y dónde se va el dinero.
+          Patrimonio (hoy) y flujo de {monthTitle}. Elige otro mes para comparar gastos y
+          presupuesto.
         </Text>
+
+        <Text style={styles.filterLabel}>Mes del informe</Text>
+        <View style={styles.chipRow}>
+          {months.slice(0, 8).map((m) => (
+            <MonthChip key={m} label={m} active={monthKey === m} onPress={() => setMonthKey(m)} />
+          ))}
+        </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Patrimonio (orientativo)</Text>
+          <Text style={styles.cardHint}>Saldos actuales de todas las cuentas; no cambia con el mes.</Text>
           {loading ? (
             <Text style={styles.meta}>Cargando…</Text>
           ) : (
@@ -62,20 +120,20 @@ export function InformeScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Flujo del mes</Text>
-          <Row label="Ingresos" value={formatCurrency(monthFlow.income)} accent />
-          <Row label="Gastos" value={formatCurrency(monthFlow.expense)} negative />
+          <Text style={styles.cardTitle}>Flujo — {monthTitle}</Text>
+          <Row label="Ingresos" value={formatCurrency(selectedFlow.income)} accent />
+          <Row label="Gastos" value={formatCurrency(selectedFlow.expense)} negative />
           <Row
             label="Neto"
-            value={formatCurrency(monthFlow.net)}
+            value={formatCurrency(selectedFlow.net)}
             bold
-            negative={monthFlow.net < 0}
+            negative={selectedFlow.net < 0}
           />
         </View>
 
-        <Text style={styles.section}>Gastos por categoría</Text>
+        <Text style={styles.section}>Gastos por categoría ({monthKey})</Text>
         {topCats.length === 0 ? (
-          <Text style={styles.meta}>Sin gastos este mes.</Text>
+          <Text style={styles.meta}>Sin gastos en este mes.</Text>
         ) : (
           topCats.map((row) => (
             <View key={row.key} style={styles.catRow}>
@@ -95,7 +153,7 @@ export function InformeScreen() {
           ))
         )}
 
-        <BudgetProgressList items={budgetProgress} />
+        <BudgetProgressList items={selectedBudgetProgress} monthKey={monthKey} />
 
         <Text style={styles.section}>Todas las cuentas</Text>
         <View style={styles.list}>
@@ -143,6 +201,19 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 40, gap: 12 },
   title: { color: colors.text, fontSize: 26, fontWeight: '800' },
   subtitle: { color: colors.textMuted, fontSize: 14, lineHeight: 20, marginBottom: 4 },
+  filterLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '600', marginTop: 4 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chipText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
+  chipTextActive: { color: colors.white },
   section: { color: colors.text, fontSize: 16, fontWeight: '800', marginTop: 12 },
   card: {
     backgroundColor: colors.surface,
@@ -153,6 +224,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cardTitle: { color: colors.text, fontSize: 15, fontWeight: '700', marginBottom: 4 },
+  cardHint: { color: colors.textMuted, fontSize: 11, lineHeight: 15, marginBottom: 6 },
   meta: { color: colors.textMuted, fontSize: 13 },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   rowLabel: { color: colors.textMuted, fontSize: 13, flex: 1 },

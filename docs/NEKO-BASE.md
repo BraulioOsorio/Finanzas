@@ -35,7 +35,7 @@ NEKO ([nekomoney.app](https://www.nekomoney.app/es)) es una app **cerrada** (iOS
 | Crédito Colombia (corte, EA, mínimo) | Cuentas + [CREDITO-CO.md](./CREDITO-CO.md) |
 | Hoy / próximos pagos | Inicio |
 | Filtro historial por tipo Neko | Historial |
-| Informe / patrimonio / top categorías | Pestaña **Informe** |
+| Informe / patrimonio / top categorías | Pestaña **Informe** (selector de mes) |
 | Presupuesto en detalle del calendario | Calendario (día seleccionado) |
 | Editar meta de cuotas en movimiento | Historial → editar Compra a meses |
 | Crear plan desde un movimiento | Historial → **Plan** en «Compra a meses» |

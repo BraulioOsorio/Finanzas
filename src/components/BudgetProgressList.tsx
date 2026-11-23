@@ -6,16 +6,19 @@ import { formatCurrency } from '../utils/format';
 
 type Props = {
   items: BudgetProgress[];
+  monthKey?: string;
 };
 
-export function BudgetProgressList({ items }: Props) {
+export function BudgetProgressList({ items, monthKey }: Props) {
   if (!items.length) {
     return null;
   }
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.title}>Presupuesto del mes</Text>
+      <Text style={styles.title}>
+        Presupuesto{monthKey ? ` (${monthKey})` : ' del mes'}
+      </Text>
       {items.map((p) => {
         const over = p.ratio > 1;
         const warn = p.ratio > 0.85;
