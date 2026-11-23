@@ -67,9 +67,10 @@ export function SettingsScreen() {
         <View style={styles.card}>
           <View style={styles.switchRow}>
             <View style={styles.switchText}>
-              <Text style={styles.cardTitle}>Recordatorios de tarjeta</Text>
+              <Text style={styles.cardTitle}>Recordatorios financieros</Text>
               <Text style={styles.cardBody}>
-                Aviso local un día antes del corte, pago o cuota (sin servidor). Cortes y EA en Cuentas.
+                Aviso local un día antes del corte, pago de tarjeta, cuota a meses o abono de préstamo
+                (día en Cuentas). Sin servidor.
               </Text>
             </View>
             <Switch

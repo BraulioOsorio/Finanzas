@@ -76,6 +76,50 @@ export function loanActivities(
   return out;
 }
 
+/** Fechas ISO (día del mes) dentro de [from, to] para recordatorios de abono. */
+export function loanPaymentDatesInRange(
+  fromIso: string,
+  toIso: string,
+  paymentDay: number,
+): string[] {
+  const day = Math.min(Math.max(1, paymentDay), 28);
+  const from = new Date(`${fromIso}T12:00:00`);
+  const to = new Date(`${toIso}T12:00:00`);
+  const out: string[] = [];
+  let y = from.getFullYear();
+  let m = from.getMonth();
+  const guard = 24;
+  for (let i = 0; i < guard; i++) {
+    const candidate = new Date(y, m, day);
+    const iso = candidate.toISOString().slice(0, 10);
+    if (iso > toIso) {
+      break;
+    }
+    if (iso >= fromIso) {
+      out.push(iso);
+    }
+    m += 1;
+    if (m > 11) {
+      m = 0;
+      y += 1;
+    }
+  }
+  return out;
+}
+
+/** Media de los últimos abonos en esa cuenta (orientativo para avisos). */
+export function typicalLoanPaymentAmount(transactions: Transaction[], account: string): number {
+  const recent = transactions
+    .filter((t) => t.account === account && isLoanPayment(t))
+    .sort((a, b) => b.postedDate.localeCompare(a.postedDate))
+    .slice(0, 4);
+  if (!recent.length) {
+    return 0;
+  }
+  const sum = recent.reduce((s, t) => s + t.amount, 0);
+  return Math.round(sum / recent.length);
+}
+
 export function paymentsThisMonth(transactions: Transaction[], monthKey: string): number {
   let sum = 0;
   for (const t of transactions) {

@@ -1,3 +1,4 @@
+import { loanPaymentDatesInRange, typicalLoanPaymentAmount } from './debts/loanLedger';
 import { paymentDueForStatementClose } from './credit/colombiaBilling';
 import {
   installmentsInRange,
@@ -15,7 +16,7 @@ export type UpcomingItem = {
   title: string;
   signedAmount: number;
   account: string;
-  kind: 'plan' | 'installment' | 'card_due' | 'card_close';
+  kind: 'plan' | 'installment' | 'card_due' | 'card_close' | 'loan_due';
   subtitle?: string;
 };
 
@@ -102,6 +103,33 @@ export function buildUpcoming(
         subtitle: `Mínimo orientativo · extracto ~${outlook.estimatedStatement.toLocaleString('es-CO')}${intHint}`,
       });
       void acc;
+    }
+  }
+
+  for (const acc of accounts) {
+    if (acc.archived || !acc.loanPaymentDay) {
+      continue;
+    }
+    const loanAccount =
+      acc.kind === 'loan' || /deuda|préstamo|prestamo/i.test(acc.name);
+    if (!loanAccount) {
+      continue;
+    }
+    const dates = loanPaymentDatesInRange(today, rangeEnd, acc.loanPaymentDay);
+    const typical = typicalLoanPaymentAmount(transactions, acc.name);
+    for (const date of dates) {
+      out.push({
+        id: `loan-${acc.id}-${date}`,
+        date,
+        title: `Abono préstamo · ${acc.name}`,
+        signedAmount: typical > 0 ? -typical : 0,
+        account: acc.name,
+        kind: 'loan_due',
+        subtitle:
+          typical > 0
+            ? `Últimos abonos ~${typical.toLocaleString('es-CO')} COP`
+            : 'Configura el día en Cuentas → editar préstamo',
+      });
     }
   }
 

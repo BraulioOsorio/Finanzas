@@ -51,6 +51,7 @@ El modelo de datos y pantallas siguen la lógica de **[NEKO: Control de Gastos](
 - Pestaña **Deudas**: préstamos, abonos del mes, movimientos y barra de amortización
 - **Historial**: botón **Plan** en compras a meses para crear cuotas sin pasar por Importar
 - **Informe**: chips de mes para flujo, categorías y presupuesto (patrimonio sigue siendo «hoy»)
+- **Préstamos**: día de abono en Cuentas + aviso en Inicio y notificación local (Ajustes)
 - Campos guardados: fecha, tipo, descripción, cuenta, grupo/categoría, notas
 - Las transferencias y pagos de tarjeta se listan pero **no mueven el saldo** (como en un libro mayor)
 - **Iconos configurables** en Ajustes: categoría Neko (default), comercio por descripción, o banco/cuenta; pestaña Cuentas siempre muestra el banco

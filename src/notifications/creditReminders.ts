@@ -63,7 +63,11 @@ export async function syncCreditReminders(
   }
 
   const targets = upcoming.filter(
-    (u) => u.kind === 'card_due' || u.kind === 'card_close' || u.kind === 'installment',
+    (u) =>
+      u.kind === 'card_due' ||
+      u.kind === 'card_close' ||
+      u.kind === 'installment' ||
+      u.kind === 'loan_due',
   );
 
   for (const item of targets) {
