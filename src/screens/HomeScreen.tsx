@@ -1,45 +1,80 @@
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AccountBalanceRow } from '../components/AccountBalanceRow';
 import { TransactionRow } from '../components/TransactionRow';
 import { useTransactions } from '../context/TransactionsContext';
 import { colors } from '../theme';
 import { formatCurrency } from '../utils/format';
 
 export function HomeScreen() {
-  const { loading, balance, totalIncome, totalExpense, transactions, transferCount } =
-    useTransactions();
+  const {
+    loading,
+    liquidAvailable,
+    totalInAccounts,
+    monthFlow,
+    accountBalances,
+    transactions,
+    transferCount,
+  } = useTransactions();
   const recent = transactions.slice(0, 5);
+  const topAccounts = accountBalances.slice(0, 4);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.greeting}>Tu dinero, al día</Text>
-        <Text style={styles.subtitle}>Resumen personal en tu móvil</Text>
+        <Text style={styles.greeting}>Finanzas</Text>
+        <Text style={styles.subtitle}>Resumen al estilo NEKO (datos en tu teléfono)</Text>
 
         <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Saldo disponible</Text>
+          <Text style={styles.balanceLabel}>Disponible aproximado</Text>
           {loading ? (
             <ActivityIndicator color={colors.accent} style={{ marginTop: 12 }} />
           ) : (
-            <Text style={styles.balanceValue}>{formatCurrency(balance)}</Text>
+            <Text style={styles.balanceValue}>{formatCurrency(liquidAvailable)}</Text>
           )}
+          <Text style={styles.balanceHint}>
+            Cuentas líquidas; excluye deudas y tarjetas. Total en todas las cuentas:{' '}
+            {formatCurrency(totalInAccounts)}
+          </Text>
+
+          <View style={styles.monthCard}>
+            <Text style={styles.monthTitle}>Flujo del mes ({monthFlow.monthKey})</Text>
+            <View style={styles.splitRow}>
+              <View style={[styles.pill, styles.pillIncome]}>
+                <Text style={styles.pillLabel}>Ingresos</Text>
+                <Text style={styles.pillValueIncome}>{formatCurrency(monthFlow.income)}</Text>
+              </View>
+              <View style={[styles.pill, styles.pillExpense]}>
+                <Text style={styles.pillLabel}>Gastos</Text>
+                <Text style={styles.pillValueExpense}>{formatCurrency(monthFlow.expense)}</Text>
+              </View>
+            </View>
+            <Text style={styles.monthNet}>
+              Neto del mes:{' '}
+              <Text style={monthFlow.net >= 0 ? styles.netPositive : styles.netNegative}>
+                {formatCurrency(monthFlow.net)}
+              </Text>
+            </Text>
+          </View>
+
           {transferCount > 0 ? (
             <Text style={styles.transferHint}>
-              {transferCount} transferencias internas (no suman al saldo)
+              {transferCount} transferencias internas (no entran al flujo ingreso/gasto)
             </Text>
           ) : null}
-          <View style={styles.splitRow}>
-            <View style={[styles.pill, styles.pillIncome]}>
-              <Text style={styles.pillLabel}>Ingresos</Text>
-              <Text style={styles.pillValueIncome}>{formatCurrency(totalIncome)}</Text>
-            </View>
-            <View style={[styles.pill, styles.pillExpense]}>
-              <Text style={styles.pillLabel}>Gastos</Text>
-              <Text style={styles.pillValueExpense}>{formatCurrency(totalExpense)}</Text>
-            </View>
-          </View>
         </View>
+
+        {topAccounts.length > 0 ? (
+          <>
+            <Text style={styles.sectionTitle}>Tus cuentas</Text>
+            <View style={styles.list}>
+              {topAccounts.map((item) => (
+                <AccountBalanceRow key={item.account} item={item} />
+              ))}
+            </View>
+          </>
+        ) : null}
 
         <Text style={styles.sectionTitle}>Movimientos recientes</Text>
         {loading ? (
@@ -48,7 +83,7 @@ export function HomeScreen() {
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>Aún no hay movimientos</Text>
             <Text style={styles.emptyBody}>
-              Ve a la pestaña Registrar para anotar tu primer ingreso o gasto.
+              Importa tu CSV de Neko o registra uno en la pestaña Registrar.
             </Text>
           </View>
         ) : (
@@ -67,7 +102,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { padding: 20, paddingBottom: 32, gap: 16 },
   greeting: { color: colors.text, fontSize: 28, fontWeight: '800' },
-  subtitle: { color: colors.textMuted, fontSize: 15, marginTop: -8 },
+  subtitle: { color: colors.textMuted, fontSize: 14, marginTop: -8, lineHeight: 20 },
   balanceCard: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: 20,
@@ -75,24 +110,36 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     marginTop: 8,
+    gap: 6,
   },
   balanceLabel: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
   balanceValue: {
     color: colors.text,
     fontSize: 36,
     fontWeight: '800',
-    marginTop: 8,
+    marginTop: 4,
     letterSpacing: -0.5,
   },
-  transferHint: { color: colors.textMuted, fontSize: 12, marginTop: 14, lineHeight: 16 },
-  splitRow: { flexDirection: 'row', gap: 10, marginTop: 18 },
+  balanceHint: { color: colors.textMuted, fontSize: 12, lineHeight: 16, marginTop: 4 },
+  monthCard: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  monthTitle: { color: colors.text, fontSize: 14, fontWeight: '700', marginBottom: 10 },
+  splitRow: { flexDirection: 'row', gap: 10 },
   pill: { flex: 1, borderRadius: 14, padding: 12 },
   pillIncome: { backgroundColor: colors.incomeMuted },
   pillExpense: { backgroundColor: colors.expenseMuted },
   pillLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   pillValueIncome: { color: colors.income, fontSize: 16, fontWeight: '700', marginTop: 4 },
   pillValueExpense: { color: colors.expense, fontSize: 16, fontWeight: '700', marginTop: 4 },
-  sectionTitle: { color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 8 },
+  monthNet: { color: colors.textMuted, fontSize: 13, marginTop: 12 },
+  netPositive: { color: colors.income, fontWeight: '700' },
+  netNegative: { color: colors.expense, fontWeight: '700' },
+  transferHint: { color: colors.textMuted, fontSize: 12, marginTop: 8, lineHeight: 16 },
+  sectionTitle: { color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 4 },
   list: { gap: 10 },
   empty: {
     backgroundColor: colors.surface,

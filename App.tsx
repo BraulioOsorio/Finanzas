@@ -5,6 +5,7 @@ import { Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { TransactionsProvider } from './src/context/TransactionsContext';
+import { AccountsScreen } from './src/screens/AccountsScreen';
 import { AddScreen } from './src/screens/AddScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -56,6 +57,13 @@ export default function App() {
               component={HomeScreen}
               options={{
                 tabBarLabel: ({ focused }) => <TabLabel label="Inicio" focused={focused} />,
+              }}
+            />
+            <Tab.Screen
+              name="Cuentas"
+              component={AccountsScreen}
+              options={{
+                tabBarLabel: ({ focused }) => <TabLabel label="Cuentas" focused={focused} />,
               }}
             />
             <Tab.Screen

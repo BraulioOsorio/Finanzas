@@ -8,6 +8,17 @@ import {
   type ReactNode,
 } from 'react';
 
+import {
+  computeAccountBalances,
+  currentMonthKey,
+  liquidBalance,
+  mergeAccountNames,
+  monthRealFlow,
+  totalAccountBalance,
+  type AccountBalance,
+  type MonthFlow,
+} from '../domain/summaries';
+import { DEFAULT_ACCOUNTS } from '../domain/nekoCatalog';
 import { applyImport, parseNekoCsv } from '../import/parseNekoCsv';
 import { loadTransactions, saveTransactions } from '../storage/transactions';
 import type { ImportResult, Transaction, TransactionDraft } from '../types';
@@ -23,6 +34,11 @@ type TransactionsContextValue = {
   totalIncome: number;
   totalExpense: number;
   transferCount: number;
+  accountBalances: AccountBalance[];
+  totalInAccounts: number;
+  liquidAvailable: number;
+  monthFlow: MonthFlow;
+  accountNames: string[];
 };
 
 const TransactionsContext = createContext<TransactionsContextValue | null>(null);
@@ -96,7 +112,17 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [persist, transactions],
   );
 
-  const { totalIncome, totalExpense, balance, transferCount } = useMemo(() => {
+  const {
+    totalIncome,
+    totalExpense,
+    balance,
+    transferCount,
+    accountBalances,
+    totalInAccounts,
+    liquidAvailable,
+    monthFlow,
+    accountNames,
+  } = useMemo(() => {
     let income = 0;
     let expense = 0;
     let transfers = 0;
@@ -111,11 +137,17 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
         expense += t.amount;
       }
     }
+    const balances = computeAccountBalances(transactions);
     return {
       totalIncome: income,
       totalExpense: expense,
       balance: income - expense,
       transferCount: transfers,
+      accountBalances: balances,
+      totalInAccounts: totalAccountBalance(balances),
+      liquidAvailable: liquidBalance(balances),
+      monthFlow: monthRealFlow(transactions, currentMonthKey()),
+      accountNames: mergeAccountNames(DEFAULT_ACCOUNTS, transactions),
     };
   }, [transactions]);
 
@@ -131,6 +163,11 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       totalIncome,
       totalExpense,
       transferCount,
+      accountBalances,
+      totalInAccounts,
+      liquidAvailable,
+      monthFlow,
+      accountNames,
     }),
     [
       transactions,
@@ -142,6 +179,11 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       totalIncome,
       totalExpense,
       transferCount,
+      accountBalances,
+      totalInAccounts,
+      liquidAvailable,
+      monthFlow,
+      accountNames,
     ],
   );
 

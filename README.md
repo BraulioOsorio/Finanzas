@@ -25,8 +25,14 @@ npm run ios       # simulador iOS (macOS)
 npm run web       # vista web (desarrollo)
 ```
 
+## Inspiración NEKO
+
+El modelo de datos y pantallas siguen la lógica de **[NEKO: Control de Gastos](https://www.nekomoney.app/es)** (cuentas, tipos de movimiento, categorías, import CSV). No usamos su código — solo tu export y la documentación pública. Detalle en [`docs/NEKO-BASE.md`](docs/NEKO-BASE.md).
+
 ## Funciones actuales
 
+- Inicio al estilo NEKO: disponible aproximado, flujo del mes, cuentas principales
+- Pestaña **Cuentas**: saldo por cuenta según movimientos
 - Resumen: saldo, total ingresos y gastos
 - Registrar movimientos con categoría y nota
 - Historial con eliminación
