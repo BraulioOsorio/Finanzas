@@ -10,7 +10,7 @@ export default function InicioScreen() {
       subtitle="Rama neko — clon propio desde APK 8.8.2 (shell inicial).">
       <View style={{ marginTop: 12 }}>
         <Text style={{ color: nekoTheme.textMuted, fontFamily: nekoTheme.fontRegular, lineHeight: 22 }}>
-          Siguiente: motor SQLite, import «Neko - My Data» y paridad de cálculos como en NEKO.
+          Código editable: src/domain/ y src/import/ (motor NEKO). Flutter: neko_app/lib/. Ver docs/CODIGO-EDITABLE.md
         </Text>
       </View>
     </NekoScreenShell>

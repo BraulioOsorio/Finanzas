@@ -1,0 +1,204 @@
+import {
+  installmentsInRange,
+  installmentTitle,
+  signedAmountForInstallment,
+} from './installments';
+import { occurrencesInRange, signedAmountForScheduled } from './scheduleProjection';
+import { resolveInstallmentAccount } from './installments';
+import type { AccountDef, InstallmentPlan, ScheduledPayment, Transaction } from '../types';
+
+export type DayScheduledItem = {
+  id: string;
+  title: string;
+  signedAmount: number;
+  account: string;
+};
+
+export type DaySnapshot = {
+  date: string;
+  balance: number;
+  transactions: Transaction[];
+  scheduled: DayScheduledItem[];
+  /** true si el saldo incluye eventos programados (hoy o futuro) */
+  includesProjection: boolean;
+};
+
+export function parseMonthKey(monthKey: string): { year: number; month: number } {
+  const [year, month] = monthKey.split('-').map(Number);
+  return { year, month };
+}
+
+export function monthKeyFromDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+export function shiftMonth(monthKey: string, delta: number): string {
+  const { year, month } = parseMonthKey(monthKey);
+  const d = new Date(year, month - 1 + delta, 1);
+  return monthKeyFromDate(d);
+}
+
+export function daysInMonth(monthKey: string): number {
+  const { year, month } = parseMonthKey(monthKey);
+  return new Date(year, month, 0).getDate();
+}
+
+function padDay(monthKey: string, day: number): string {
+  return `${monthKey}-${String(day).padStart(2, '0')}`;
+}
+
+/** Lunes = 0 … Domingo = 6 */
+export function weekdayIndexMonFirst(isoDate: string): number {
+  const day = new Date(`${isoDate}T12:00:00`).getDay();
+  return day === 0 ? 6 : day - 1;
+}
+
+/** Eventos programados en el mes agrupados por fecha ISO. */
+export function scheduledByDate(
+  items: ScheduledPayment[],
+  installmentPlans: InstallmentPlan[],
+  accounts: AccountDef[],
+  monthStart: string,
+  monthEnd: string,
+  accountFilter?: string,
+): Map<string, DayScheduledItem[]> {
+  const map = new Map<string, DayScheduledItem[]>();
+
+  for (const plan of installmentPlans) {
+    if (!plan.active) {
+      continue;
+    }
+    if (accountFilter && plan.account.trim() !== accountFilter) {
+      continue;
+    }
+    const acc = resolveInstallmentAccount(plan, accounts);
+    const hits = installmentsInRange(plan, monthStart, monthEnd, acc);
+    const signed = signedAmountForInstallment(plan, acc);
+    for (const { date, index } of hits) {
+      const list = map.get(date) ?? [];
+      list.push({
+        id: `ins-${plan.id}-${date}`,
+        title: installmentTitle(plan, index, acc),
+        signedAmount: signed,
+        account: plan.account,
+      });
+      map.set(date, list);
+    }
+  }
+
+  for (const item of items) {
+    if (!item.active) {
+      continue;
+    }
+    if (accountFilter && item.account.trim() !== accountFilter) {
+      continue;
+    }
+    const dates = occurrencesInRange(item, monthStart, monthEnd);
+    const signed = signedAmountForScheduled(item);
+    for (const date of dates) {
+      const list = map.get(date) ?? [];
+      list.push({
+        id: `${item.id}-${date}`,
+        title: item.title,
+        signedAmount: signed,
+        account: item.account,
+      });
+      map.set(date, list);
+    }
+  }
+
+  return map;
+}
+
+export function buildMonthCalendar(
+  transactions: Transaction[],
+  monthKey: string,
+  accountFilter?: string,
+  scheduled: ScheduledPayment[] = [],
+  installmentPlans: InstallmentPlan[] = [],
+  accounts: AccountDef[] = [],
+  todayIso?: string,
+): { days: DaySnapshot[]; startPadding: number } {
+  const today = todayIso ?? new Date().toISOString().slice(0, 10);
+  const filtered = accountFilter
+    ? transactions.filter((t) => t.account.trim() === accountFilter)
+    : transactions;
+
+  const sorted = [...filtered].sort((a, b) => {
+    const byDate = a.postedDate.localeCompare(b.postedDate);
+    if (byDate !== 0) {
+      return byDate;
+    }
+    return a.createdAt.localeCompare(b.createdAt);
+  });
+
+  let running = 0;
+  const monthStart = `${monthKey}-01`;
+  for (const t of sorted) {
+    if (t.postedDate < monthStart) {
+      running += t.signedAmount;
+    }
+  }
+
+  const totalDays = daysInMonth(monthKey);
+  const monthEnd = padDay(monthKey, totalDays);
+  const scheduledMap = scheduledByDate(
+    scheduled,
+    installmentPlans,
+    accounts,
+    monthStart,
+    monthEnd,
+    accountFilter,
+  );
+
+  const days: DaySnapshot[] = [];
+
+  for (let d = 1; d <= totalDays; d++) {
+    const date = padDay(monthKey, d);
+    const dayTxs = sorted.filter((t) => t.postedDate === date);
+    for (const t of dayTxs) {
+      running += t.signedAmount;
+    }
+
+    const dayScheduled = date >= today ? (scheduledMap.get(date) ?? []) : [];
+    for (const s of dayScheduled) {
+      running += s.signedAmount;
+    }
+
+    days.push({
+      date,
+      balance: running,
+      transactions: dayTxs,
+      scheduled: dayScheduled,
+      includesProjection: date >= today && dayScheduled.length > 0,
+    });
+  }
+
+  const startPadding = days.length > 0 ? weekdayIndexMonFirst(days[0].date) : 0;
+  return { days, startPadding };
+}
+
+export function formatMonthTitle(monthKey: string): string {
+  const { year, month } = parseMonthKey(monthKey);
+  const label = new Date(year, month - 1, 1).toLocaleDateString('es', {
+    month: 'long',
+    year: 'numeric',
+  });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+export function formatCompactMoney(amount: number): string {
+  const abs = Math.abs(amount);
+  if (abs >= 1_000_000) {
+    return `${amount < 0 ? '−' : ''}${(abs / 1_000_000).toFixed(1)}M`;
+  }
+  if (abs >= 100_000) {
+    return `${amount < 0 ? '−' : ''}${Math.round(abs / 1000)}k`;
+  }
+  if (abs >= 10_000) {
+    return `${amount < 0 ? '−' : ''}${(abs / 1000).toFixed(0)}k`;
+  }
+  return `${amount < 0 ? '−' : ''}${Math.round(abs / 1000) || '0'}`;
+}
