@@ -17,6 +17,7 @@ import {
   EMPTY_HISTORY_FILTER,
   distinctCategoryGroups,
   distinctMonthKeys,
+  distinctNekoTypes,
   filterTransactions,
 } from '../domain/historyFilters';
 import { useTransactions } from '../context/TransactionsContext';
@@ -30,6 +31,12 @@ export function HistoryScreen() {
 
   const months = useMemo(() => distinctMonthKeys(transactions), [transactions]);
   const groups = useMemo(() => distinctCategoryGroups(transactions), [transactions]);
+  const nekoTypes = useMemo(() => distinctNekoTypes(transactions), [transactions]);
+  const TYPE_QUICK = ['Compra a meses', 'Gasto', 'Ingreso', 'Pago', 'Transferencia', 'Pago de Tarjeta'];
+  const typeChips = useMemo(
+    () => TYPE_QUICK.filter((t) => nekoTypes.includes(t)),
+    [nekoTypes],
+  );
   const filtered = useMemo(() => filterTransactions(transactions, filters), [transactions, filters]);
 
   const confirmDelete = (id: string) => {
@@ -44,7 +51,7 @@ export function HistoryScreen() {
   };
 
   const clearFilters = Boolean(
-    filters.query || filters.account || filters.categoryGroup || filters.monthKey,
+    filters.query || filters.account || filters.categoryGroup || filters.monthKey || filters.nekoType,
   );
 
   return (
@@ -95,6 +102,23 @@ export function HistoryScreen() {
               label={a}
               active={filters.account === a}
               onPress={() => setFilters((f) => ({ ...f, account: a }))}
+            />
+          ))}
+        </View>
+
+        <Text style={styles.filterLabel}>Tipo Neko</Text>
+        <View style={styles.chipRow}>
+          <Chip
+            label="Todos"
+            active={!filters.nekoType}
+            onPress={() => setFilters((f) => ({ ...f, nekoType: '' }))}
+          />
+          {typeChips.map((t) => (
+            <Chip
+              key={t}
+              label={t}
+              active={filters.nekoType === t}
+              onPress={() => setFilters((f) => ({ ...f, nekoType: t }))}
             />
           ))}
         </View>

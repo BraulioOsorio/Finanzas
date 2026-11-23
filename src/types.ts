@@ -69,7 +69,9 @@ export type InstallmentPlan = {
   active: boolean;
   /** El CSV de Neko no trae # de cuotas; hay que confirmar en Plan */
   needsCuotaReview?: boolean;
-  cuotaSource?: 'manual' | 'csv_inferred';
+  cuotaSource?: 'manual' | 'csv_inferred' | 'csv_exact';
+  /** Cuotas ya pagadas al importar (p. ej. columna Installment Current) */
+  initialPaidCount?: number;
 };
 
 export type InstallmentPlanUpdate = Partial<
@@ -106,6 +108,11 @@ export type Transaction = {
   category: string;
   notes: string;
   source: TransactionSource;
+  /** CSV extendido Finanzas: cuota actual/total en una celda (ej. 3/12) */
+  installmentMeta?: string;
+  purchaseTotal?: number;
+  installmentCurrent?: number;
+  installmentCountHint?: number;
 };
 
 export type TransactionDraft = Omit<Transaction, 'id' | 'createdAt'>;
@@ -124,6 +131,10 @@ export type NekoCsvRow = {
   categoryGroup: string;
   category: string;
   notes: string;
+  installmentMeta?: string;
+  purchaseTotal?: number;
+  installmentCurrent?: number;
+  installmentCountHint?: number;
 };
 
 export type ImportResult = {

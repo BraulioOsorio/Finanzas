@@ -73,6 +73,10 @@ export function nekoRowToDraft(row: NekoCsvRow, rowIndex: number) {
       category,
       notes: row.notes.trim(),
       source: 'neko' as const,
+      installmentMeta: row.installmentMeta,
+      purchaseTotal: row.purchaseTotal,
+      installmentCurrent: row.installmentCurrent,
+      installmentCountHint: row.installmentCountHint,
     },
     postedIso,
   };

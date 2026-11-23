@@ -1,3 +1,4 @@
+import { FINANZAS_CSV_OPTIONAL_COLUMNS, parseInstallmentMetaCell } from './installmentMeta';
 import { parseCsvRecords } from './parseCsv';
 import { nekoRowToDraft } from './nekoMapping';
 import type { NekoCsvRow, Transaction } from '../types';
@@ -13,6 +14,12 @@ const EXPECTED_HEADER = [
   'Notes',
 ];
 
+export const NEKO_CSV_HEADER_LINE = EXPECTED_HEADER.join(',');
+
+export const FINANZAS_EXTENDED_HEADER_LINE = [...EXPECTED_HEADER, ...FINANZAS_CSV_OPTIONAL_COLUMNS].join(
+  ',',
+);
+
 function normalizeHeader(cell: string): string {
   return cell.replace(/^\uFEFF/, '').trim();
 }
@@ -26,7 +33,24 @@ function parseAmount(raw: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-function rowToNeko(row: string[], lineNumber: number): { row?: NekoCsvRow; error?: string } {
+type ExtraColumnIndex = Partial<Record<(typeof FINANZAS_CSV_OPTIONAL_COLUMNS)[number], number>>;
+
+function resolveExtraColumns(header: string[]): ExtraColumnIndex {
+  const out: ExtraColumnIndex = {};
+  for (const name of FINANZAS_CSV_OPTIONAL_COLUMNS) {
+    const idx = header.indexOf(name);
+    if (idx >= 0) {
+      out[name] = idx;
+    }
+  }
+  return out;
+}
+
+function rowToNeko(
+  row: string[],
+  lineNumber: number,
+  extras: ExtraColumnIndex,
+): { row?: NekoCsvRow; error?: string } {
   if (row.length < 8) {
     return { error: `Línea ${lineNumber}: faltan columnas (${row.length}/8)` };
   }
@@ -51,6 +75,24 @@ function rowToNeko(row: string[], lineNumber: number): { row?: NekoCsvRow; error
     return { error: `Línea ${lineNumber}: monto inválido "${amountRaw}"` };
   }
 
+  const metaIdx = extras['Installment Meta'];
+  const purchaseIdx = extras['Purchase Total'];
+  const currentIdx = extras['Installment Current'];
+
+  const installmentMeta = metaIdx != null ? row[metaIdx]?.trim() : '';
+  const metaParsed = installmentMeta ? parseInstallmentMetaCell(installmentMeta) : {};
+
+  const purchaseRaw = purchaseIdx != null ? row[purchaseIdx]?.trim() : '';
+  const purchaseTotal = purchaseRaw ? parseAmount(purchaseRaw) ?? undefined : undefined;
+
+  const currentRaw = currentIdx != null ? row[currentIdx]?.trim() : '';
+  const installmentCurrent =
+    currentRaw && Number.isFinite(Number(currentRaw))
+      ? Number(currentRaw)
+      : metaParsed.installmentCurrent;
+
+  const installmentCountHint = metaParsed.installmentCount;
+
   return {
     row: {
       postedDate: postedDate.trim(),
@@ -61,6 +103,10 @@ function rowToNeko(row: string[], lineNumber: number): { row?: NekoCsvRow; error
       categoryGroup,
       category,
       notes,
+      installmentMeta: installmentMeta || undefined,
+      purchaseTotal: purchaseTotal != null ? Math.abs(purchaseTotal) : undefined,
+      installmentCurrent,
+      installmentCountHint,
     },
   };
 }
@@ -68,10 +114,11 @@ function rowToNeko(row: string[], lineNumber: number): { row?: NekoCsvRow; error
 export function parseNekoCsv(content: string): {
   transactions: Transaction[];
   errors: string[];
+  extendedFormat: boolean;
 } {
   const records = parseCsvRecords(content);
   if (records.length === 0) {
-    return { transactions: [], errors: ['El archivo está vacío.'] };
+    return { transactions: [], errors: ['El archivo está vacío.'], extendedFormat: false };
   }
 
   const header = records[0].map(normalizeHeader);
@@ -85,14 +132,18 @@ export function parseNekoCsv(content: string): {
       errors: [
         'Encabezado no coincide con export Neko. Se espera: ' + EXPECTED_HEADER.join(', '),
       ],
+      extendedFormat: false,
     };
   }
+
+  const extras = resolveExtraColumns(header);
+  const extendedFormat = Object.keys(extras).length > 0;
 
   const transactions: Transaction[] = [];
   const errors: string[] = [];
 
   for (let i = 1; i < records.length; i++) {
-    const parsed = rowToNeko(records[i], i + 1);
+    const parsed = rowToNeko(records[i], i + 1, extras);
     if (parsed.error) {
       errors.push(parsed.error);
       continue;
@@ -105,7 +156,7 @@ export function parseNekoCsv(content: string): {
     });
   }
 
-  return { transactions, errors };
+  return { transactions, errors, extendedFormat };
 }
 
 export function applyImport(

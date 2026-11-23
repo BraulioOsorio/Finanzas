@@ -22,6 +22,9 @@ export function installmentProgress(
       projectedThrough += 1;
     }
   }
+  if (plan.initialPaidCount && plan.initialPaidCount > projectedThrough) {
+    projectedThrough = plan.initialPaidCount;
+  }
   const remaining = Math.max(0, total - projectedThrough);
   const nextDate = dates.find((d) => d > today);
   return { total, projectedThrough, remaining, nextDate };

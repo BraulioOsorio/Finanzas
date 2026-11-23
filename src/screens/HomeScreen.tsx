@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountBalanceRow } from '../components/AccountBalanceRow';
 import { BudgetProgressList } from '../components/BudgetProgressList';
 import { CreditCardSummaryList } from '../components/CreditCardSummaryList';
+import { DebtSummaryList } from '../components/DebtSummaryList';
 import { TransactionRow } from '../components/TransactionRow';
 import { TodayAgenda } from '../components/TodayAgenda';
 import { UpcomingList } from '../components/UpcomingList';
@@ -16,12 +17,13 @@ export function HomeScreen() {
     loading,
     liquidAvailable,
     totalInAccounts,
-    monthFlow,
     accountBalances,
     transactions,
     transferCount,
     budgetProgress,
     creditCardSummaries,
+    debtSummaries,
+    monthFlow,
     upcomingItems,
     todayAgenda,
     tomorrowHeadline,
@@ -76,6 +78,7 @@ export function HomeScreen() {
           ) : null}
 
           <CreditCardSummaryList cards={creditCardSummaries} />
+          <DebtSummaryList items={debtSummaries} monthKey={monthFlow.monthKey} />
           <BudgetProgressList items={budgetProgress} />
           <UpcomingList items={upcomingItems} />
         </View>

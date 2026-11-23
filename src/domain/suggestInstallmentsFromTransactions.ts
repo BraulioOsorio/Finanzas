@@ -108,13 +108,17 @@ export function suggestInstallmentsFromTransactions(
     }
 
     const meta =
+      t.installmentCountHint ??
+      parseInstallmentCountFromText(t.installmentMeta ?? '') ??
       parseInstallmentCountFromText(t.notes) ??
       parseInstallmentCountFromText(t.description) ??
       parseInstallmentCountFromText(t.category);
 
-    const totalAmount = Math.round(t.amount);
+    const totalAmount = Math.round(t.purchaseTotal ?? t.amount);
     const installmentCount = meta ?? guessInstallmentCount(totalAmount);
     const needsCuotaReview = meta == null;
+    const initialPaidCount =
+      t.installmentCurrent && t.installmentCurrent > 0 ? t.installmentCurrent - 1 : undefined;
 
     const def = accountDefByName(accounts, t.account);
     const onCredit = def?.kind === 'credit' && Boolean(def.statementCloseDay);
@@ -124,9 +128,11 @@ export function suggestInstallmentsFromTransactions(
       ? estimateInstallmentWithInterest(totalAmount, installmentCount, ea)
       : Math.round(totalAmount / installmentCount);
 
-    const reason = meta
-      ? `CSV/notas: ${installmentCount} cuotas`
-      : `Neko no indica cuotas (ej. Nu). Estimamos ${installmentCount} por monto · confirma en Plan`;
+    const reason = t.installmentCountHint
+      ? `CSV Finanzas: ${installmentCount} cuotas${t.installmentCurrent ? ` (va en ${t.installmentCurrent})` : ''}`
+      : meta
+        ? `Notas: ${installmentCount} cuotas`
+        : `Neko puro sin cuotas · estimamos ${installmentCount} · confirma en Plan`;
 
     suggestions.push({
       title,
@@ -142,7 +148,8 @@ export function suggestInstallmentsFromTransactions(
       statementLagMonths: lag,
       active: true,
       needsCuotaReview,
-      cuotaSource: 'csv_inferred',
+      cuotaSource: t.installmentCountHint ? 'csv_exact' : 'csv_inferred',
+      initialPaidCount,
       reason,
       fingerprint: fp,
     });

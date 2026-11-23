@@ -5,6 +5,7 @@ export type HistoryFilterState = {
   account: string;
   categoryGroup: string;
   monthKey: string;
+  nekoType: string;
 };
 
 export const EMPTY_HISTORY_FILTER: HistoryFilterState = {
@@ -12,6 +13,7 @@ export const EMPTY_HISTORY_FILTER: HistoryFilterState = {
   account: '',
   categoryGroup: '',
   monthKey: '',
+  nekoType: '',
 };
 
 function normalizeQuery(q: string): string {
@@ -40,6 +42,9 @@ export function filterTransactions(
     if (filters.monthKey && !t.postedDate.startsWith(filters.monthKey)) {
       return false;
     }
+    if (filters.nekoType && t.nekoType.trim() !== filters.nekoType) {
+      return false;
+    }
     if (!q) {
       return true;
     }
@@ -58,6 +63,17 @@ export function distinctMonthKeys(items: Transaction[]): string[] {
     }
   }
   return [...set].sort((a, b) => b.localeCompare(a));
+}
+
+export function distinctNekoTypes(items: Transaction[]): string[] {
+  const set = new Set<string>();
+  for (const t of items) {
+    const n = t.nekoType.trim();
+    if (n) {
+      set.add(n);
+    }
+  }
+  return [...set].sort((a, b) => a.localeCompare(b, 'es'));
 }
 
 export function distinctCategoryGroups(items: Transaction[]): string[] {

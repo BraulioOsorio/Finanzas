@@ -44,6 +44,8 @@ El modelo de datos y pantallas siguen la lógica de **[NEKO: Control de Gastos](
 - **Tarjetas Colombia**: corte, gracia corte→pago, EA rotativo/cuotas, extracto estimado y compras a meses ligadas al **corte** (ver [`docs/CREDITO-CO.md`](docs/CREDITO-CO.md))
 - **Sincronizar compras a meses** al importar CSV Neko (o botón en Importar)
 - **Hoy** en Inicio; recordatorios locales de tarjeta en Ajustes
+- **CSV extendido** (opcional): columnas `Installment Meta`, `Purchase Total` — [`docs/NEKO-CSV-EXTENDED.md`](docs/NEKO-CSV-EXTENDED.md)
+- **Deudas y préstamos** en Inicio; historial con filtro por tipo Neko
 - Campos guardados: fecha, tipo, descripción, cuenta, grupo/categoría, notas
 - Las transferencias y pagos de tarjeta se listan pero **no mueven el saldo** (como en un libro mayor)
 - **Iconos configurables** en Ajustes: categoría Neko (default), comercio por descripción, o banco/cuenta; pestaña Cuentas siempre muestra el banco

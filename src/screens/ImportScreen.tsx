@@ -17,10 +17,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { suggestInstallmentsFromTransactions } from '../domain/suggestInstallmentsFromTransactions';
 import { suggestRecurringFromTransactions } from '../domain/suggestRecurringFromTransactions';
 import { useTransactions } from '../context/TransactionsContext';
+import { FINANZAS_EXTENDED_HEADER_LINE, NEKO_CSV_HEADER_LINE } from '../import/parseNekoCsv';
 import { transactionsToNekoCsv } from '../export/nekoCsvExport';
 import { colors } from '../theme';
 
-const NEKO_FORMAT = `Posted Date,Transaction Type,Description,Amount,Account,Category Group,Category,Notes`;
+const NEKO_FORMAT = NEKO_CSV_HEADER_LINE;
+const EXTENDED_HINT = FINANZAS_EXTENDED_HEADER_LINE;
 
 export function ImportScreen() {
   const {
@@ -207,8 +209,12 @@ export function ImportScreen() {
           <Text style={styles.mono}>{NEKO_FORMAT}</Text>
           <Text style={styles.hint}>
             Tipos soportados: Gasto, Ingreso, Pago, Transferencia, Pago de Tarjeta, Reembolso, Compra
-            a meses, Pago de Préstamo y Fondos del préstamo. Las transferencias no alteran el saldo
-            (solo ingresos y gastos reales).
+            a meses, Pago de Préstamo y Fondos del préstamo.
+          </Text>
+          <Text style={styles.monoSmall}>{EXTENDED_HINT}</Text>
+          <Text style={styles.hint}>
+            Columnas extra opcionales (después de Notes) para cuotas exactas al importar — ver
+            docs/NEKO-CSV-EXTENDED.md en el repo.
           </Text>
         </View>
 
@@ -279,6 +285,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: { color: colors.text, fontWeight: '700', fontSize: 15 },
   mono: { color: colors.textMuted, fontSize: 11, lineHeight: 16, fontFamily: 'monospace' },
+  monoSmall: { color: colors.textMuted, fontSize: 9, lineHeight: 14, fontFamily: 'monospace' },
   hint: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
   button: { borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
   buttonPrimary: { backgroundColor: colors.accent },

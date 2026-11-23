@@ -15,6 +15,7 @@ import {
 import { applyCreditPresetToDraft } from '../domain/credit/creditPresets';
 import { activeAccountNames, isAccountLiquid } from '../domain/accounts/resolveAccounts';
 import { budgetProgressForMonth, type BudgetProgress } from '../domain/budgets';
+import { debtBucketSummaries, type DebtBucketSummary } from '../domain/debtSummary';
 import type { CreditCardSummary } from '../domain/accounts/creditSummary';
 import { defaultLiquidForKind, inferAccountKind } from '../domain/accounts/inferAccountKind';
 import {
@@ -87,6 +88,7 @@ type TransactionsContextValue = {
   budgets: CategoryBudget[];
   budgetProgress: BudgetProgress[];
   creditCardSummaries: CreditCardSummary[];
+  debtSummaries: DebtBucketSummary[];
   addBudget: (draft: CategoryBudgetDraft) => Promise<void>;
   removeBudget: (id: string) => Promise<void>;
   toggleBudget: (id: string, active: boolean) => Promise<void>;
@@ -540,6 +542,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     monthFlow,
     accountNames,
     creditSummary,
+    debtSummary,
     budgetProg,
   } = useMemo(() => {
     let income = 0;
@@ -560,6 +563,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     const liquidFn = (name: string) => isAccountLiquid(accounts, name);
     const monthKey = currentMonthKey();
   const creditSummary = creditCardSummaries(accounts, balances, transactions, installmentPlans);
+    const debtSummary = debtBucketSummaries(accounts, balances, transactions, monthKey);
     const budgetProg = budgetProgressForMonth(budgets, transactions, monthKey);
     return {
       totalIncome: income,
@@ -572,6 +576,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       monthFlow: monthRealFlow(transactions, monthKey),
       accountNames: activeAccountNames(accounts, transactions),
       creditSummary,
+      debtSummary,
       budgetProg,
     };
   }, [transactions, accounts, budgets, installmentPlans]);
@@ -605,6 +610,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       budgets,
       budgetProgress: budgetProg,
       creditCardSummaries: creditSummary,
+      debtSummaries: debtSummary,
       addBudget,
       removeBudget,
       toggleBudget,
@@ -640,6 +646,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       monthFlow,
       accountNames,
       creditSummary,
+      debtSummary,
       budgetProg,
       accounts,
       addAccount,

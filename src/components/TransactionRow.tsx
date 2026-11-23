@@ -24,9 +24,19 @@ export function TransactionRow({ item, onEdit, onDelete }: Props) {
   const brand = resolveDisplayIconForTransaction(item, iconDisplayMode);
   const title = item.description?.trim() || categoryDisplayLabel(item.categoryGroup, item.category, item.nekoType);
   const categoryLine = categoryDisplayLabel(item.categoryGroup, item.category, item.nekoType);
-  const metaExtra = item.notes?.trim()
-    ? item.notes.split('\n')[0]
-    : formatShortDate(item.postedDate);
+  const installmentHint =
+    item.nekoType.trim() === 'Compra a meses' &&
+    (item.installmentMeta ||
+      (item.installmentCurrent && item.installmentCountHint
+        ? `${item.installmentCurrent}/${item.installmentCountHint}`
+        : item.installmentCountHint
+          ? `${item.installmentCountHint} cuotas`
+          : ''));
+  const metaExtra = installmentHint
+    ? `Cuotas: ${installmentHint}`
+    : item.notes?.trim()
+      ? item.notes.split('\n')[0]
+      : formatShortDate(item.postedDate);
 
   return (
     <Pressable

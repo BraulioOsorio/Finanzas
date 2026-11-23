@@ -29,10 +29,15 @@ NEKO ([nekomoney.app](https://www.nekomoney.app/es)) es una app **cerrada** (iOS
 | Filtros historial | Buscar, mes, cuenta, grupo |
 | Transferencia en pareja | Registrar → Transferencia |
 | Sugerir Plan tras import | Importar (quincena, Netflix, Claro…) |
+| Compras a meses + cuotas en calendario/corte | Plan + CSV extendido Finanzas |
+| Deudas / préstamos en Inicio | Bloque «Deudas y préstamos» |
+| CSV con cuotas (`Installment Meta`) | [NEKO-CSV-EXTENDED.md](./NEKO-CSV-EXTENDED.md) |
+| Crédito Colombia (corte, EA, mínimo) | Cuentas + [CREDITO-CO.md](./CREDITO-CO.md) |
+| Hoy / próximos pagos | Inicio |
+| Filtro historial por tipo Neko | Historial |
 
 ## Qué NO está aún (premium / complejo en NEKO)
 
-- Recordatorios y **pagos a meses** con lógica de tarjeta
 - Presupuesto por categoría (v1 en Categorías + barras en Inicio)
 - Tarjetas: cupo, corte y día de pago (v1 en editar cuenta tipo crédito)
 - Widgets, Siri, sincronización nube

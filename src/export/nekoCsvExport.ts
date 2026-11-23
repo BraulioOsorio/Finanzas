@@ -1,7 +1,5 @@
+import { FINANZAS_EXTENDED_HEADER_LINE, NEKO_CSV_HEADER_LINE } from '../import/parseNekoCsv';
 import type { Transaction } from '../types';
-
-const HEADER =
-  'Posted Date,Transaction Type,Description,Amount,Account,Category Group,Category,Notes';
 
 function escapeCsvCell(value: string): string {
   if (/[",\n\r]/.test(value)) {
@@ -14,8 +12,20 @@ function nekoTypeForExport(t: Transaction): string {
   return t.nekoType?.trim() || (t.kind === 'income' ? 'Ingreso' : t.kind === 'transfer' ? 'Transferencia' : 'Gasto');
 }
 
+function hasExtendedFields(t: Transaction): boolean {
+  return Boolean(
+    t.installmentMeta ||
+      t.purchaseTotal ||
+      t.installmentCurrent ||
+      t.installmentCountHint,
+  );
+}
+
 export function transactionsToNekoCsv(transactions: Transaction[]): string {
-  const lines = [HEADER];
+  const useExtended = transactions.some(hasExtendedFields);
+  const header = useExtended ? FINANZAS_EXTENDED_HEADER_LINE : NEKO_CSV_HEADER_LINE;
+  const lines = [header];
+
   const sorted = [...transactions].sort((a, b) => {
     const d = a.postedDate.localeCompare(b.postedDate);
     if (d !== 0) {
@@ -25,7 +35,7 @@ export function transactionsToNekoCsv(transactions: Transaction[]): string {
   });
 
   for (const t of sorted) {
-    const row = [
+    const base = [
       t.postedDate,
       nekoTypeForExport(t),
       t.description,
@@ -34,8 +44,22 @@ export function transactionsToNekoCsv(transactions: Transaction[]): string {
       t.categoryGroup,
       t.category,
       t.notes,
-    ].map((c) => escapeCsvCell(c ?? ''));
-    lines.push(row.join(','));
+    ];
+    if (useExtended) {
+      const meta =
+        t.installmentMeta ??
+        (t.installmentCurrent && t.installmentCountHint
+          ? `${t.installmentCurrent}/${t.installmentCountHint}`
+          : t.installmentCountHint
+            ? `${t.installmentCountHint} cuotas`
+            : '');
+      base.push(
+        meta,
+        t.purchaseTotal != null ? String(-Math.abs(t.purchaseTotal)) : '',
+        t.installmentCurrent != null ? String(t.installmentCurrent) : '',
+      );
+    }
+    lines.push(base.map((c) => escapeCsvCell(c ?? '')).join(','));
   }
 
   return lines.join('\n');
