@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Finanzas",
+    "slug": "finanzas-neko",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/neko/icon/neko-icon.png",
+    "scheme": "finanzas",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/neko/icon/neko-icon.png",
+        "backgroundColor": "#0b0c10"
+      },
+      "package": "com.braulio.finanzas"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/neko/icon/neko-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0b0c10"
+        }
+      ],
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
