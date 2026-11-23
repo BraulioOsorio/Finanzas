@@ -1,36 +1,40 @@
 {
   "expo": {
     "name": "Finanzas",
-    "slug": "finanzas-neko",
-    "version": "0.1.0",
+    "slug": "finanzas-oceanic",
+    "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/neko/icon/neko-icon.png",
-    "scheme": "finanzas",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/neko/icon/neko-icon.png",
-        "backgroundColor": "#0b0c10"
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.braulio.finanzas"
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router",
+      "./plugins/withFinanzasWidget.js",
+      "expo-image",
       [
-        "expo-splash-screen",
+        "expo-notifications",
         {
-          "image": "./assets/neko/icon/neko-icon.png",
-          "resizeMode": "contain",
-          "backgroundColor": "#0b0c10"
+          "icon": "./assets/icon.png",
+          "color": "#b57cff"
         }
       ],
-      "expo-font"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    }
+      "expo-secure-store",
+      "expo-asset",
+      "expo-font",
+      "expo-sqlite"
+    ]
   }
 }

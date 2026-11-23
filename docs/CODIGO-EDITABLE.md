@@ -4,7 +4,7 @@
 
 | Carpeta | Qué es |
 |---------|--------|
-| **`src/domain/`**, **`src/import/`** | Motor NEKO en **TypeScript** (ledger, safe-to-spend, import SQLite/CSV) — portado desde tu rama `main` para editar y usar con Expo |
+| **`src/`** | App NEKO completa en **TypeScript** (pantallas, motor, import SQLite) — **solo rama `neko`** |
 | **`neko_app/lib/`** | Proyecto **Flutter** propio: `main.dart`, schema, stubs `reverse_engineered/*` (nombres sacados de `libapp.so`) |
 | **`app/`** | UI Expo (tabs) — conectará a `src/` |
 | **`assets/neko/`** | Gráficos del APK (reemplázalos antes de publicar) |

@@ -1,21 +1,12 @@
-# Finanzas — rama `neko` (proyecto limpio)
+# Finanzas NEKO — rama `neko` única
 
-Rama **aislada** de `main`: partimos de **cero** para clonar **tu referencia** [NEKO 8.8.2](https://www.nekomoney.app/es) y construir **tu app propia** (Expo + React Native).
+**Todo el producto vive aquí.** La rama `main` no es línea de trabajo; este fork es **vuestra app** (clon editable de NEKO).
 
-## Qué hay ahora
+## Qué incluye
 
-- Shell con **5 tabs** como NEKO: Inicio, Calendario, Análisis, Cuentas, Historial.
-- **Fuentes e imágenes** extraídas del APK local (`assets/fonts/`, `assets/neko/`).
-- Sin código heredado del `main` antiguo.
-
-## Qué no es posible copiar tal cual
-
-NEKO en el APK es **Flutter** (`com.tuxedolab.paycheckbuddy`). El binario Dart **no** viene en texto; en muchos APK faltan las librerías `.so`. La copia literal es **reimplementación** pantalla a pantalla + el mismo modelo SQLite que exporta NEKO.
-
-## Requisitos
-
-- Node 20+
-- APK en `~/Descargas/Neko-8.8.2.apk` (o ruta que pases al script)
+- **`App.tsx` + `src/`** — app completa Expo (pantallas NEKO, import SQLite, ledger).
+- **`neko_app/`** — capa Flutter/Dart propia (stubs desde `libapp.so`).
+- **`reference/`** — APK/binarios locales (no en Git).
 
 ## Arrancar
 
@@ -25,20 +16,10 @@ npm install
 npm start
 ```
 
-## Scripts
-
-```bash
-./scripts/extract-neko-apk-assets.sh          # fuentes + assets visuales
-./scripts/unpack-neko-apk-reference.sh       # APK completo en reference/ (gitignored)
-```
+Import: backup **«Neko - My Data»** en pestaña Importar.
 
 ## Documentación
 
-- [`docs/CLON-NEKO.md`](docs/CLON-NEKO.md) — plan de paridad y límites legales/técnicos.
-
-## Ramas
-
-| Rama | Contenido |
-|------|-----------|
-| **`neko`** | Tu clon NEKO desde cero |
-| **`main`** | Código anterior de Finanzas (otra línea) |
+- [`docs/CODIGO-EDITABLE.md`](docs/CODIGO-EDITABLE.md)
+- [`docs/INGENIERIA-INVERSA-NEKO.md`](docs/INGENIERIA-INVERSA-NEKO.md)
+- [`docs/CLON-NEKO.md`](docs/CLON-NEKO.md)
