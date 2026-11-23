@@ -15,13 +15,14 @@ NEKO ([nekomoney.app](https://www.nekomoney.app/es)) es una app **cerrada** (iOS
 | Grupo de categoría + categoría | `CATEGORY_TREE` en `src/domain/nekoCatalog.ts` |
 | Tipos: Gasto, Ingreso, Pago, Transferencia… | Mismos tipos al registrar e importar |
 | Historial de transacciones | Pestaña Historial |
+| Calendario con saldo por día | Pestaña **Calendario** (proyección histórica; futuro con pagos programados) |
 | Importar CSV | Pestaña Importar |
 | Transferencias no son “gasto” | `kind: transfer` excluido del flujo ingreso/gasto |
 | Varios saldos | Pestaña Cuentas |
 
 ## Qué NO está aún (premium / complejo en NEKO)
 
-- Calendario con **saldo proyectado** día a día
+- Saldo **futuro** en el calendario (pagos programados / quincena)
 - Pagos recurrentes y quincena
 - Presupuesto por categoría
 - Tarjetas/préstamos con lógica de corte

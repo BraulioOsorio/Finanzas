@@ -7,9 +7,10 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatShortDate(iso: string): string {
+  const normalized = iso.length === 10 ? `${iso}T12:00:00` : iso;
   return new Intl.DateTimeFormat('es', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-  }).format(new Date(iso));
+  }).format(new Date(normalized));
 }

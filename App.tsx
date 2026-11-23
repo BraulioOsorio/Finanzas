@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { TransactionsProvider } from './src/context/TransactionsContext';
 import { AccountsScreen } from './src/screens/AccountsScreen';
+import { CalendarScreen } from './src/screens/CalendarScreen';
 import { AddScreen } from './src/screens/AddScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -57,6 +58,13 @@ export default function App() {
               component={HomeScreen}
               options={{
                 tabBarLabel: ({ focused }) => <TabLabel label="Inicio" focused={focused} />,
+              }}
+            />
+            <Tab.Screen
+              name="Calendario"
+              component={CalendarScreen}
+              options={{
+                tabBarLabel: ({ focused }) => <TabLabel label="Calendario" focused={focused} />,
               }}
             />
             <Tab.Screen
