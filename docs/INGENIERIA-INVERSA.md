@@ -25,8 +25,9 @@ bash scripts/run-blutter.sh    # requiere venv + pyelftools + requests
 
 ```bash
 cd neko
-~/finanzas/reference/tools/flutter/bin/flutter pub get
-~/finanzas/reference/tools/flutter/bin/flutter run
+bash tool/run_android.sh
 ```
+
+Si usas `flutter run` a mano, con **JDK 17** (`export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`). Java 25 rompe Gradle con error `25.0.4`.
 
 Edita `lib/app.dart`, blocs en `lib/reverse_engineered/`, SQLite según `lib/data/neko_schema.dart`.

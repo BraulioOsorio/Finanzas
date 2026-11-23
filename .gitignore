@@ -6,7 +6,6 @@ reference/
 *.sqlite
 .env
 .DS_Store
-android/
-ios/
-build/
+# Solo raíz (no ignorar neko/android del proyecto Flutter)
+/build/
 .dart_tool/
