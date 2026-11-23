@@ -1,11 +1,7 @@
-# Solo rama `neko`
+# Rama `neko` — reglas
 
-- **`main` no es** línea de desarrollo de esta app.
-- Todo lo editable del clon NEKO está **en esta rama**: `App.tsx`, `src/`, `neko_app/`, `assets/`.
-- Binarios del APK → `reference/` (local, gitignored).
+1. **Cero UI del viejo Finanzas / `main`.** Nada de `src/screens`, `src/navigation`, componentes morados hechos antes.
+2. **Solo fork NEKO:** assets del APK, `neko_app/` (Dart), motor mínimo si hace falta en `src/` — todo **nuevo** desde RE.
+3. **`main` no se toca ni se copia.**
 
-```bash
-git checkout neko
-npm install
-npm start
-```
+Front actual: plantilla mínima en `app/` hasta reconstruir pantallas como NEKO real.

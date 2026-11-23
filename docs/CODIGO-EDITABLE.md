@@ -4,7 +4,8 @@
 
 | Carpeta | Qué es |
 |---------|--------|
-| **`src/`** | App NEKO completa en **TypeScript** (pantallas, motor, import SQLite) — **solo rama `neko`** |
+| **`src/domain/`**, **`src/import/`** | Motor NEKO (TypeScript) — **sin** pantallas del viejo `main` |
+| **`app/`** | Front **nuevo** (shell; pantallas NEKO por hacer) |
 | **`neko_app/lib/`** | Proyecto **Flutter** propio: `main.dart`, schema, stubs `reverse_engineered/*` (nombres sacados de `libapp.so`) |
 | **`app/`** | UI Expo (tabs) — conectará a `src/` |
 | **`assets/neko/`** | Gráficos del APK (reemplázalos antes de publicar) |
