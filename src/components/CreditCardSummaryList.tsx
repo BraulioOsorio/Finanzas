@@ -50,7 +50,7 @@ export function CreditCardSummaryList({ cards }: Props) {
               {c.outlook.estimatedInterestIfUnpaid > 0 ? (
                 <Text style={styles.interest}>
                   Si dejas saldo rotativo: ~{formatCurrency(c.outlook.estimatedInterestIfUnpaid)} / mes
-                  (EA {c.interestRateEA ?? '—'}%)
+                  (IVA 19% · EA {c.interestRateEA ?? '—'}%)
                 </Text>
               ) : null}
               {c.outlook.installmentChargesInPeriod > 0 ? (

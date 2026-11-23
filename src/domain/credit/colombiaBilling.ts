@@ -1,4 +1,26 @@
 import type { AccountDef } from '../../types';
+import { addColombiaBusinessDays, shiftToColombiaBusinessDay } from './colombiaCalendar';
+
+/** IVA sobre servicios financieros (intereses), habitual en CO. */
+export const INTEREST_IVA_RATE = 0.19;
+
+/** Redondeo típico de pago mínimo al peso (muchas emisoras al millar cercano). */
+export function roundMinimumPaymentCOP(amount: number): number {
+  if (amount <= 0) {
+    return 0;
+  }
+  if (amount < 50_000) {
+    return Math.ceil(amount / 100) * 100;
+  }
+  return Math.ceil(amount / 1_000) * 1_000;
+}
+
+export function applyInterestIVA(interestBase: number): number {
+  if (interestBase <= 0) {
+    return 0;
+  }
+  return Math.round(interestBase * (1 + INTEREST_IVA_RATE));
+}
 
 /** Día del mes con tope (extractos colombianos suelen usar 1–28). */
 export function dayOfMonthClamped(year: number, monthIndex: number, day: number): string {
@@ -75,18 +97,17 @@ export function paymentDueForStatementClose(closeIso: string, account: AccountDe
   const closeDay = account.statementCloseDay;
   if (!closeDay) {
     return account.paymentDueDay
-      ? nextFixedCalendarDay(closeIso, account.paymentDueDay)
+      ? shiftToColombiaBusinessDay(nextFixedCalendarDay(closeIso, account.paymentDueDay))
       : undefined;
   }
 
   if (account.paymentDueOffsetDays && account.paymentDueOffsetDays > 0) {
-    const d = parseIso(closeIso);
-    d.setDate(d.getDate() + account.paymentDueOffsetDays);
-    return d.toISOString().slice(0, 10);
+    const due = addColombiaBusinessDays(closeIso, account.paymentDueOffsetDays);
+    return shiftToColombiaBusinessDay(due);
   }
 
   if (account.paymentDueDay) {
-    return dueDayAfterClose(closeIso, closeDay, account.paymentDueDay);
+    return shiftToColombiaBusinessDay(dueDayAfterClose(closeIso, closeDay, account.paymentDueDay));
   }
 
   return undefined;

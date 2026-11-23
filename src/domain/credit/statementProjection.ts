@@ -1,8 +1,10 @@
 import {
+  applyInterestIVA,
   estimateRevolvingInterest,
   isInPeriod,
   nextStatementClose,
   paymentDueForStatementClose,
+  roundMinimumPaymentCOP,
   statementPeriodForClose,
 } from './colombiaBilling';
 import { installmentStatementCloseDates, shouldUseStatementBilling } from './installmentBilling';
@@ -23,6 +25,8 @@ export type CardStatementOutlook = {
   /** Pagar el extracto completo antes del vencimiento (evitar interés rotativo nuevo). */
   payInFullToZeroInterest: number;
   estimatedInterestIfUnpaid: number;
+  /** Interés rotativo mensual sin IVA (referencia). */
+  estimatedInterestBase: number;
   daysToDue?: number;
 };
 
@@ -119,9 +123,11 @@ export function cardStatementOutlook(
 
   const estimatedStatement = Math.max(0, purchases + installments - payments);
   const pct = account.minimumPaymentPercent ?? 10;
-  const estimatedMinimum = Math.round(estimatedStatement * (pct / 100) + installments);
+  const rawMinimum = estimatedStatement * (pct / 100) + installments;
+  const estimatedMinimum = roundMinimumPaymentCOP(rawMinimum);
   const ea = account.interestRateEA ?? 0;
-  const estimatedInterestIfUnpaid = estimateRevolvingInterest(estimatedStatement, ea);
+  const estimatedInterestBase = estimateRevolvingInterest(estimatedStatement, ea);
+  const estimatedInterestIfUnpaid = applyInterestIVA(estimatedInterestBase);
 
   let daysToDue: number | undefined;
   if (nextDue) {
@@ -143,6 +149,7 @@ export function cardStatementOutlook(
     estimatedMinimum,
     payInFullToZeroInterest: estimatedStatement,
     estimatedInterestIfUnpaid,
+    estimatedInterestBase,
     daysToDue,
   };
 }

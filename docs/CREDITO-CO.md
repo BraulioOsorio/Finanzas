@@ -28,9 +28,16 @@ Al crear/editar cuenta tipo crédito: **Valores típicos Colombia**. Coincidenci
 - **Tarjetas y crédito**: extracto estimado del periodo abierto, mínimo orientativo, interés rotativo si no pagas todo.
 - **Próximos 14 días**: cortes, pagos con monto estimado, cuotas en extracto.
 
-## Limitaciones (v1)
+## Reglas refinadas (v1.1)
 
-- No modela avances, seguros, IVA de intereses, ni día hábil exacto del banco.
+- Vencimiento tras **días hábiles** cuando usas `paymentDueOffsetDays` (lun–vie, festivos fijos CO).
+- Fecha de pago **ajustada al siguiente día hábil** si cae en fin de semana o festivo.
+- **Pago mínimo** redondeado (centenas / miles COP, según monto).
+- **Interés rotativo estimado con IVA 19%** sobre el interés (no sobre capital de cuotas).
+
+## Limitaciones (siguiente)
+
+- No modela avances de efectivo, seguros del plástico, ni Semana Santa / traslados de festivos.
 - Los pagos de tarjeta del CSV deben ser tipo **Pago de Tarjeta** en ambas cuentas para restar del periodo.
 - Tras importar CSV, el tipo **Compra a meses** no trae número de cuotas ni cuántas faltan (comprobado en export Neko; Nu tampoco). La app estima y marca **Revisa cuotas** hasta que lo confirmes en Plan.
 - Recordatorios locales opcionales en Ajustes (un día antes de corte/pago/cuota).
