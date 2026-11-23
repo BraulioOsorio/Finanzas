@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../cubit/neko_data_cubit.dart';
 import '../theme/neko_theme.dart';
+import '../utils/format_money.dart';
 import '../widgets/neko_background.dart';
 
 class AnalysisScreen extends StatelessWidget {
@@ -10,15 +13,24 @@ class AnalysisScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return NekoBackground(
       child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            const Text('Análisis', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 20),
-            _card('Patrimonio neto', '\$ 14.235.128'),
-            _card('Gasto por categoría', 'Top: Hogar, Comida, Transporte'),
-            _card('Tendencia 6 meses', 'Gráfico — conectar SQLite NEKO'),
-          ],
+        child: BlocBuilder<NekoDataCubit, NekoDataState>(
+          builder: (context, state) {
+            final s = state.summary;
+            if (!state.hasDb || s == null) {
+              return const Center(child: Text('Importa Neko - My Data primero'));
+            }
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                const Text('Análisis', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 20),
+                _card('Patrimonio neto', formatCop(s.netWorth)),
+                _card('Líquido', formatCop(s.liquidTotal)),
+                _card('Ahorros', formatCop(s.savingsTotal)),
+                _card('Crédito / préstamos', formatCop(s.creditTotal)),
+              ],
+            );
+          },
         ),
       ),
     );

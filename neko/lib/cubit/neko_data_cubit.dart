@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../domain/neko_summary.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
 import '../services/neko_database.dart';
@@ -15,6 +16,7 @@ class NekoDataState {
     this.monthExpense = 0,
     this.monthIncome = 0,
     this.safeToSpend = 0,
+    this.summary,
   });
 
   final bool loading;
@@ -26,6 +28,7 @@ class NekoDataState {
   final double monthExpense;
   final double monthIncome;
   final double safeToSpend;
+  final NekoSummary? summary;
 
   double get budgetPercent {
     if (monthIncome <= 0) return 0;
@@ -43,6 +46,7 @@ class NekoDataState {
     double? monthExpense,
     double? monthIncome,
     double? safeToSpend,
+    NekoSummary? summary,
   }) {
     return NekoDataState(
       loading: loading ?? this.loading,
@@ -54,6 +58,7 @@ class NekoDataState {
       monthExpense: monthExpense ?? this.monthExpense,
       monthIncome: monthIncome ?? this.monthIncome,
       safeToSpend: safeToSpend ?? this.safeToSpend,
+      summary: summary ?? this.summary,
     );
   }
 }
@@ -75,7 +80,7 @@ class NekoDataCubit extends Cubit<NekoDataState> {
       }
       final accounts = await _db.loadAccounts();
       final tx = await _db.loadRecentTransactions();
-      final liquid = await _db.liquidBalanceTotal();
+      final summary = NekoSummary.fromAccounts(accounts);
       final month = DateTime.now().toIso8601String().substring(0, 7);
       final expense = await _db.monthExpenseTotal(month);
       final income = await _db.monthIncomeTotal(month);
@@ -85,10 +90,11 @@ class NekoDataCubit extends Cubit<NekoDataState> {
           hasDb: true,
           accounts: accounts,
           transactions: tx,
-          liquidTotal: liquid,
+          liquidTotal: summary.liquidTotal,
           monthExpense: expense,
           monthIncome: income,
-          safeToSpend: liquid,
+          safeToSpend: summary.safeToSpend,
+          summary: summary,
         ),
       );
     } catch (e) {

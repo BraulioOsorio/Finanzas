@@ -24,3 +24,5 @@ cd neko
 ```
 
 `main` no se usa.
+
+**Cuándo probar:** [`docs/CUANDO-PROBAR.md`](docs/CUANDO-PROBAR.md) — importa `Neko - My Data` y compara con NEKO.
