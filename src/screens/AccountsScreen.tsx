@@ -29,6 +29,7 @@ export function AccountsScreen() {
   } = useTransactions();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<AccountDef | null>(null);
+  const [draftName, setDraftName] = useState<string | undefined>();
 
   const rows = useMemo(() => {
     const balances = computeAccountBalances(transactions);
@@ -54,18 +55,15 @@ export function AccountsScreen() {
 
   const openNew = () => {
     setEditing(null);
+    setDraftName(undefined);
     setEditorOpen(true);
   };
 
   const openEdit = (name: string) => {
     const def = accountDefByName(accounts, name);
-    if (def) {
-      setEditing(def);
-      setEditorOpen(true);
-    } else {
-      setEditing(null);
-      setEditorOpen(true);
-    }
+    setEditing(def ?? null);
+    setDraftName(def ? undefined : name);
+    setEditorOpen(true);
   };
 
   return (
@@ -120,9 +118,11 @@ export function AccountsScreen() {
       <AccountEditorModal
         visible={editorOpen}
         editing={editing}
+        initialName={draftName}
         onClose={() => {
           setEditorOpen(false);
           setEditing(null);
+          setDraftName(undefined);
         }}
       />
     </SafeAreaView>

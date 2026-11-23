@@ -27,10 +27,12 @@ const KINDS: AccountKind[] = ['bank', 'cash', 'savings', 'credit', 'loan', 'fint
 type Props = {
   visible: boolean;
   editing: AccountDef | null;
+  /** Nombre sugerido al configurar una cuenta que solo existía en movimientos */
+  initialName?: string;
   onClose: () => void;
 };
 
-export function AccountEditorModal({ visible, editing, onClose }: Props) {
+export function AccountEditorModal({ visible, editing, initialName, onClose }: Props) {
   const { addAccount, updateAccount } = useTransactions();
   const [name, setName] = useState('');
   const [kind, setKind] = useState<AccountKind>('bank');
@@ -48,12 +50,14 @@ export function AccountEditorModal({ visible, editing, onClose }: Props) {
       setLiquid(editing.liquid);
       setNotes(editing.notes);
     } else {
-      setName('');
-      setKind('bank');
-      setLiquid(true);
+      const seed = initialName?.trim() ?? '';
+      setName(seed);
+      const inferred = seed ? inferAccountKind(seed) : 'bank';
+      setKind(inferred);
+      setLiquid(seed ? defaultLiquidForKind(inferred) : true);
       setNotes('');
     }
-  }, [visible, editing]);
+  }, [visible, editing, initialName]);
 
   const onChangeKind = (k: AccountKind) => {
     setKind(k);
